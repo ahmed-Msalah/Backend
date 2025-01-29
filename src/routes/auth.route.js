@@ -3,7 +3,7 @@ import express from "express";
 
 const Router = express.Router();
 
-Router.post('/auth/create', (req, res) => {
+Router.post('/auth/register', (req, res) => {
     res.json({ statusCode: 201, message: "Account Created Sucessfully" })
 })
 
