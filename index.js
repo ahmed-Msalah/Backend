@@ -14,7 +14,6 @@ app.use(express.json());
 
 // Routes
 app.use('/api', authRouter);
-app.get("*",(req, res)=>{res.json({statusCode: 404, message: "Not Found"})} )
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI)
