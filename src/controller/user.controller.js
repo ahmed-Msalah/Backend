@@ -35,7 +35,9 @@ const createAccount = async (req, res) => {
 
         await sendVerificationEmail(email, username, verificationCode);
 
-        res.status(201).json({ message: 'Account created successfully', data: { id: createdUser.id } });
+        const token = generateToken(createdUser);
+
+        res.status(201).json({ message: 'Account created successfully', data: { id: createdUser.id, token } });
     } catch (error) {
         console.error('Error creating account:', error);
         res.status(500).json({ message: 'Internal server error' });
