@@ -1,7 +1,7 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import authRouter from './routes/auth.route.js';
+const express = require('express');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const authRouter = require('./routes/auth.route.js')
 
 dotenv.config();
 

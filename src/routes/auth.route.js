@@ -1,19 +1,14 @@
-import express from "express";
+const express = require("express");
+const { createAccount, verifyEmail, login } = require("../controller/user.controller.js");
 
 
 const Router = express.Router();
 
-Router.post('/auth/register', (req, res) => {
-    res.json({ statusCode: 201, message: "Account Created Sucessfully" })
-})
+Router.post('/auth/register', createAccount)
 
-Router.post('/auth/login', (req, res) => {
-    res.json({ statusCode: 201, message: "Login Successfully" })
-})
+Router.post('/auth/login', login)
 
-Router.post('/auth/verify', (req, res) => {
-    res.json({ statusCode: 201, message: "Account Verified Successfully" });
-});
+Router.post('/auth/verify', verifyEmail);
 
 Router.post('/auth/password/forget', (req, res) => {
     res.json({ statusCode: 201, message: "Check Email For Rest Password Code" });
@@ -31,4 +26,4 @@ Router.post('/auth/google/login', (req, res) => {
     res.json({ statusCode: 201, message: "Google Login Successfully" });
 })
 
-export default Router;
+module.exports = Router;
