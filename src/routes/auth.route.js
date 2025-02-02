@@ -1,5 +1,5 @@
 const express = require("express");
-const { createAccount, verifyEmail, login } = require("../controller/user.controller.js");
+const { createAccount, verifyEmail, login, resendVerficationCode, requestPasswordReset, verifyResetCode, resetPassword } = require("../controller/user.controller.js");
 
 
 const Router = express.Router();
@@ -9,14 +9,14 @@ Router.post('/auth/register', createAccount)
 Router.post('/auth/login', login)
 
 Router.post('/auth/verify', verifyEmail);
+Router.post('/auth/verification/resend/:userId', resendVerficationCode);
 
-Router.post('/auth/password/forget', (req, res) => {
-    res.json({ statusCode: 201, message: "Check Email For Rest Password Code" });
-})
 
-Router.post('/auth/password/reset', (req, res) => {
-    res.json({ statusCode: 201, message: "Password Reset Sucessfully" });
-})
+Router.post('/auth/password/forget', requestPasswordReset)
+Router.post('/auth/password/forget/verify', verifyResetCode)
+
+
+Router.patch('/auth/password/reset', resetPassword)
 
 Router.post('/auth/facebook/login', (req, res) => {
     res.json({ statusCode: 201, message: "Facebook Login Successfully" });
