@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const authRouter = require('./src/routes/auth.route.js');
+const userRouter = require('./src/routes/user.route.js');
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api', authRouter);
+app.use('/api/users', userRouter);
 
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Endpoint not found' });
@@ -26,4 +28,3 @@ mongoose
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch(error => console.error('MongoDB connection error:', error));
-console.log(process.env);
