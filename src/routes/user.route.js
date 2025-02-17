@@ -7,6 +7,9 @@ const {
   deleteUserById,
   changePassword,
 } = require(`../controller/userController.js`);
+
+
+
 Router.route('/').get(getAllUsers);
 Router.route('/:id').get(getUserById);
 Router.route('/:id').put(updateUserById);

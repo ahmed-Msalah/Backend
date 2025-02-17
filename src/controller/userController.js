@@ -17,7 +17,13 @@ const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    res.status(200).json({ userData: user });
+    res.status(200).json({ 
+         id: user.id,
+         first_name: user.first_namec,
+         last_name: user.last_name,
+         email: user.email,
+         username: user.username
+    } );
   } catch (error) {
     res.status(500).json({ message: 'Server error', EROOOOR: error.message });
   }
@@ -36,7 +42,7 @@ const updateUserById = async (req, res) => {
 
     if (!updatedUser) return res.status(404).json({ message: 'User not found' });
 
-    res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+    res.status(200).json({ message: 'User updated successfully', data: req.body});
   } catch (error) {
     res.status(500).json({ message: 'Server error', EROOOOR: error.message });
   }
