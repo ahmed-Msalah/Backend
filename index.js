@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const authRouter = require('./src/routes/auth.route.js');
 const userRouter = require('./src/routes/user.route.js');
+const reportRouter = require('./src/routes/reports.rooutes.js');
 
 dotenv.config();
 
@@ -15,6 +16,8 @@ app.use(express.json());
 // Routes
 app.use('/api', authRouter);
 app.use('/api/users', userRouter);
+app.use("/api/reports",reportRouter );
+
 
 app.use((req, res, next) => {
   res.status(404).json({ message: 'Endpoint not found' });

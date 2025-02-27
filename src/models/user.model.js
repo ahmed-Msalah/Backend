@@ -41,6 +41,13 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    facebookLogin: {
+      type: Boolean, default: false
+    },
+    googleLogin: {
+      type: Boolean,
+      default: false,
+    },
     resetPasswordCode: { type: String },
     resetPasswordExpires: { type: Date },
     resetPasswordVerified: { type: Boolean, default: false },
