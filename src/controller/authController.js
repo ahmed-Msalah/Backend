@@ -196,7 +196,7 @@ const requestPasswordReset = async (req, res) => {
 
     return res
       .status(200)
-      .json({ message: 'Password reset code sent to your email' });
+      .json({ message: 'Password reset code sent to your email', userId: user.id });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

@@ -55,7 +55,6 @@ exports.getAllUsageForUser = async (req, res) => {
     // Format the response data
     const report = powerUsageData.map((usage) => ({
       deviceId: deviceMap[usage.deviceId]?.deviceId || null,
-      name: deviceMap[usage.deviceId]?.name || "Unknown Device",
       usage: usage.usage,
       timestamp: usage.createdAt,
     }));
