@@ -3,11 +3,10 @@ const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = "yhxqejiytxmderhv";
 
-// دالة لتوليد التوكن
 module.exports.generateToken = (user) => {
   return jwt.sign(
     { id: user._id, email: user.email, role: user.role },
     JWT_SECRET,
-    { expiresIn: '30d' } // مدة صلاحية التوكن
+    { expiresIn: '30d' }
   );
 };

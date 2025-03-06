@@ -13,6 +13,7 @@ const roomSchema = new mongoose.Schema(
         },
         description: {
             type: String,
+            
         },
         createdAt: {
             type: Date,

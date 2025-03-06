@@ -2,11 +2,6 @@ const mongoose = require("mongoose");
 
 const deviceSchema = new mongoose.Schema(
     {
-        deviceId: {
-            type: String,
-            required: true,
-            unique: true,
-        },
         name: {
             type: String,
             required: true,
@@ -19,6 +14,10 @@ const deviceSchema = new mongoose.Schema(
             enum: ["ON", "OFF"],
             default: "OFF",
         },
+        pinNumber: {
+            type: Number,
+            required: true,
+        },
         roomId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Room",
@@ -28,7 +27,7 @@ const deviceSchema = new mongoose.Schema(
             type: Date,
             default: Date.now,
         },
-        updateAt: {
+        updatedAt: {
             type: Date,
             default: Date.now,
         },

@@ -3,7 +3,8 @@ const mongoose = require("mongoose");
 const powerUsageSchema = new mongoose.Schema(
     {
         deviceId: {
-            type: String, // Now storing `deviceId` as a string instead of ObjectId
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Device",
             required: true,
         },
         usage: {

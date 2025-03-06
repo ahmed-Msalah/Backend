@@ -1,5 +1,7 @@
+const PowerUsage = require('../models/power.usage.model.js');
 const User = require('../models/user.model.js');
 const bcrypt = require('bcrypt');
+const { getUserRecomndations } = require('../service/open.api.service.js');
 
 
 const getAllUsers = async (req, res) => {
@@ -116,4 +118,21 @@ const changePassword = async (req, res) => {
   }
 };
 
-module.exports = { deleteUserById, getUserById, updateUserById, getAllUsers, changePassword };
+const getRecommendations = async (req, res) => {
+  try {
+    const { userId } = req.user.id;
+
+    const usageData = await PowerUsage.find({ userId });
+
+    if (!usageData.length) {
+      return res.status(404).json({ message: "No usage data available." });
+    }
+
+    const recommendations = await getUserRecomndations(usageData);
+    res.json({ recommendations });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}
+
+module.exports = { deleteUserById, getUserById, updateUserById, getAllUsers, changePassword, getRecommendations };
