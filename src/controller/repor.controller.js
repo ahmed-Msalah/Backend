@@ -1,7 +1,7 @@
 const PowerUsage = require("../models/power.usage.model");
 const Device = require("../models/device.model");
 const Room = require("../models/room.model");
-const moment = require("moment"); 
+const moment = require("moment");
 
 exports.getAllUsageForUser = async (req, res) => {
   try {
@@ -32,19 +32,19 @@ exports.getAllUsageForUser = async (req, res) => {
     const roomIds = rooms.map((room) => room._id);
 
     // Find all devices in these rooms
-    const devices = await Device.find({ roomId: { $in: roomIds } }).select("_id deviceId name");
+    const devices = await Device.find({ roomId: { $in: roomIds } }).select("_id name");
     if (!devices.length) {
       return res.status(404).json({ message: "No devices found for this user" });
     }
 
     // Map devices by _id for quick lookup
     const deviceMap = devices.reduce((acc, device) => {
-      acc[device.deviceId] = { deviceId: device.deviceId, name: device.name };
+      acc[device._id] = { _id: device._id, name: device.name };
       return acc;
     }, {});
 
     // Extract device IDs
-    const deviceIds = devices.map((device) => device.deviceId);
+    const deviceIds = devices.map((device) => device._id);
 
     // Find power usage data within the specified time range
     const powerUsageData = await PowerUsage.find({
@@ -54,7 +54,7 @@ exports.getAllUsageForUser = async (req, res) => {
 
     // Format the response data
     const report = powerUsageData.map((usage) => ({
-      deviceId: deviceMap[usage.deviceId]?.deviceId || null,
+      deviceId: deviceMap[usage.deviceId]?._id || null,
       usage: usage.usage,
       timestamp: usage.createdAt,
     }));
@@ -81,7 +81,7 @@ exports.getUsageForDeviceByUser = async (req, res) => {
     const roomIds = rooms.map((room) => room._id);
 
     // Find the device and ensure it belongs to one of the user's rooms
-    const device = await Device.findOne({ deviceId, roomId: { $in: roomIds } }).select("deviceId name");
+    const device = await Device.findOne({ _id: deviceId, roomId: { $in: roomIds } }).select("_id name");
     if (!device) {
       return res.status(404).json({ message: "Device not found for this user" });
     }
@@ -93,7 +93,7 @@ exports.getUsageForDeviceByUser = async (req, res) => {
 
     res.json({
       userId,
-      deviceId: device.deviceId,
+      deviceId: device._id,
       deviceName: device.name,
       usageHistory: powerUsageData.map((usage) => ({
         usage: usage.usage,
@@ -106,113 +106,94 @@ exports.getUsageForDeviceByUser = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-exports.totalConsumptionForUser =async (req, res) => {
+exports.totalConsumptionForUser = async (req, res) => {
   try {
-      const { userId } = req.params;
+    const { userId } = req.params;
 
-      const rooms = await Room.find({ userId }).select("_id");
-      const roomIds = rooms.map(room => room._id);
-      
-      const devices = await Device.find({ roomId: { $in: roomIds } }).select("deviceId");
-      const deviceIds = devices.map(device => device.deviceId);
-      
-      const totalConsumption = await PowerUsage.aggregate([
-          { $match: { deviceId: { $in: deviceIds } } },
-          { $group: { _id: null, total: { $sum: "$usage" } } }
-      ]);
+    const rooms = await Room.find({ userId }).select("_id");
+    const roomIds = rooms.map(room => room._id);
 
-      res.json({ totalConsumption: totalConsumption[0]?.total || 0 });
+    const devices = await Device.find({ roomId: { $in: roomIds } }).select("_id");
+    const deviceIds = devices.map(device => device._id);
+
+    const totalConsumption = await PowerUsage.aggregate([
+      { $match: { deviceId: { $in: deviceIds } } },
+      { $group: { _id: null, total: { $sum: "$usage" } } }
+    ]);
+
+    res.json({ totalConsumption: totalConsumption[0]?.total || 0 });
   } catch (error) {
-      res.status(500).json({ error: "something went wrong 🤡" });
+    res.status(500).json({ error: "something went wrong 🤡" });
   }
 };
 
 
 exports.CompareSavingPercentage = async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const now = new Date();
-        const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  try {
+    const { userId } = req.params;
+    const now = new Date();
+    const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
-        const rooms = await Room.find({ userId }).select("_id");
-        const roomIds = rooms.map(room => room._id);
-        const devices = await Device.find({ roomId: { $in: roomIds } }).select("deviceId");
-        const deviceIds = devices.map(device => device.deviceId);
+    const rooms = await Room.find({ userId }).select("_id");
+    const roomIds = rooms.map(room => room._id);
+    const devices = await Device.find({ roomId: { $in: roomIds } }).select("_id");
+    const deviceIds = devices.map(device => device._id);
 
-        const currentMonthUsage = await PowerUsage.aggregate([
-            { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: firstDayCurrentMonth } } },
-            { $group: { _id: null, total: { $sum: "$usage" } } }
-        ]);
+    const currentMonthUsage = await PowerUsage.aggregate([
+      { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: firstDayCurrentMonth } } },
+      { $group: { _id: null, total: { $sum: "$usage" } } }
+    ]);
 
-        const lastMonthUsage = await PowerUsage.aggregate([
-            { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: firstDayLastMonth, $lt: firstDayCurrentMonth } } },
-            { $group: { _id: null, total: { $sum: "$usage" } } }
-        ]);
+    const lastMonthUsage = await PowerUsage.aggregate([
+      { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: firstDayLastMonth, $lt: firstDayCurrentMonth } } },
+      { $group: { _id: null, total: { $sum: "$usage" } } }
+    ]);
 
-        const lastMonthTotal = lastMonthUsage[0]?.total || 0;
-        const currentMonthTotal = currentMonthUsage[0]?.total || 0;
+    const lastMonthTotal = lastMonthUsage[0]?.total || 0;
+    const currentMonthTotal = currentMonthUsage[0]?.total || 0;
 
-        const savingsPercentage = lastMonthTotal
-            ? ((lastMonthTotal - currentMonthTotal) / lastMonthTotal) * 100
-            : 0;
+    const savingsPercentage = lastMonthTotal
+      ? ((lastMonthTotal - currentMonthTotal) / lastMonthTotal) * 100
+      : 0;
 
-        res.json({ savingsPercentage });
-    } catch (error) {
-        res.status(500).json({ error: "ERROR!" });
-    }
+    res.json({ savingsPercentage });
+  } catch (error) {
+    res.status(500).json({ error: "ERROR!" });
+  }
 };
 
 
 
- exports.highestDeviceConsume = async (req, res) => {
-    try {
-        const { userId } = req.params;
+exports.highestDeviceConsume = async (req, res) => {
+  try {
+    const { userId } = req.params;
 
-        const rooms = await Room.find({ userId }).select("_id");
-        const roomIds = rooms.map(room => room._id);
-        const devices = await Device.find({ roomId: { $in: roomIds } });
-        const deviceIds = devices.map(device => device.deviceId);
+    const rooms = await Room.find({ userId }).select("_id");
+    const roomIds = rooms.map(room => room._id);
+    const devices = await Device.find({ roomId: { $in: roomIds } });
+    const deviceIds = devices.map(device => device._id);
 
-        const highestDevice = await PowerUsage.aggregate([
-            { $match: { deviceId: { $in: deviceIds } } },
-            { $group: { _id: "$deviceId", total: { $sum: "$usage" } } },
-            { $sort: { total: -1 } },
-            { $limit: 1 }
-        ]);
+    const highestDevice = await PowerUsage.aggregate([
+      { $match: { deviceId: { $in: deviceIds } } },
+      { $group: { _id: "$deviceId", total: { $sum: "$usage" } } },
+      { $sort: { total: -1 } },
+      { $limit: 1 }
+    ]);
 
-        if (!highestDevice.length) {
-            return res.json({ message: "لا يوجد استهلاك" });
-        }
-
-        const device = await Device.findOne({ deviceId: highestDevice[0]._id });
-
-        res.json({
-            deviceId: device.deviceId,
-            deviceName: device.name,
-            consumption: highestDevice[0].total,
-        });
-    } catch (error) {
-        res.status(500).json({ error: "خطأ في السيرفر" });
+    if (!highestDevice.length) {
+      return res.json({ message: "لا يوجد استهلاك" });
     }
+
+    const device = await Device.findOne({ deviceId: highestDevice[0]._id });
+
+    res.json({
+      deviceId: device.deviceId,
+      deviceName: device.name,
+      consumption: highestDevice[0].total,
+    });
+  } catch (error) {
+    res.status(500).json({ error: "خطأ في السيرفر" });
+  }
 };
 
