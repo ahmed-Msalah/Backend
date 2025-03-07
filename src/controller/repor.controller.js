@@ -105,3 +105,114 @@ exports.getUsageForDeviceByUser = async (req, res) => {
     res.status(500).json({ message: "Server Error" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+exports.totalConsumptionForUser =async (req, res) => {
+  try {
+      const { userId } = req.params;
+
+      const rooms = await Room.find({ userId }).select("_id");
+      const roomIds = rooms.map(room => room._id);
+      
+      const devices = await Device.find({ roomId: { $in: roomIds } }).select("deviceId");
+      const deviceIds = devices.map(device => device.deviceId);
+      
+      const totalConsumption = await PowerUsage.aggregate([
+          { $match: { deviceId: { $in: deviceIds } } },
+          { $group: { _id: null, total: { $sum: "$usage" } } }
+      ]);
+
+      res.json({ totalConsumption: totalConsumption[0]?.total || 0 });
+  } catch (error) {
+      res.status(500).json({ error: "something went wrong 🤡" });
+  }
+};
+
+
+exports.CompareSavingPercentage = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const now = new Date();
+        const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const firstDayLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        const rooms = await Room.find({ userId }).select("_id");
+        const roomIds = rooms.map(room => room._id);
+        const devices = await Device.find({ roomId: { $in: roomIds } }).select("deviceId");
+        const deviceIds = devices.map(device => device.deviceId);
+
+        const currentMonthUsage = await PowerUsage.aggregate([
+            { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: firstDayCurrentMonth } } },
+            { $group: { _id: null, total: { $sum: "$usage" } } }
+        ]);
+
+        const lastMonthUsage = await PowerUsage.aggregate([
+            { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: firstDayLastMonth, $lt: firstDayCurrentMonth } } },
+            { $group: { _id: null, total: { $sum: "$usage" } } }
+        ]);
+
+        const lastMonthTotal = lastMonthUsage[0]?.total || 0;
+        const currentMonthTotal = currentMonthUsage[0]?.total || 0;
+
+        const savingsPercentage = lastMonthTotal
+            ? ((lastMonthTotal - currentMonthTotal) / lastMonthTotal) * 100
+            : 0;
+
+        res.json({ savingsPercentage });
+    } catch (error) {
+        res.status(500).json({ error: "ERROR!" });
+    }
+};
+
+
+
+ exports.highestDeviceConsume = async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        const rooms = await Room.find({ userId }).select("_id");
+        const roomIds = rooms.map(room => room._id);
+        const devices = await Device.find({ roomId: { $in: roomIds } });
+        const deviceIds = devices.map(device => device.deviceId);
+
+        const highestDevice = await PowerUsage.aggregate([
+            { $match: { deviceId: { $in: deviceIds } } },
+            { $group: { _id: "$deviceId", total: { $sum: "$usage" } } },
+            { $sort: { total: -1 } },
+            { $limit: 1 }
+        ]);
+
+        if (!highestDevice.length) {
+            return res.json({ message: "لا يوجد استهلاك" });
+        }
+
+        const device = await Device.findOne({ deviceId: highestDevice[0]._id });
+
+        res.json({
+            deviceId: device.deviceId,
+            deviceName: device.name,
+            consumption: highestDevice[0].total,
+        });
+    } catch (error) {
+        res.status(500).json({ error: "خطأ في السيرفر" });
+    }
+};
+
