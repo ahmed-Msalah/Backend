@@ -9,6 +9,11 @@ const deviceSchema = new mongoose.Schema(
         description: {
             type: String,
         },
+        categoryId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Category",
+            required: true,
+        },
         status: {
             type: String,
             enum: ["ON", "OFF"],

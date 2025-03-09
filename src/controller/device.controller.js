@@ -5,9 +5,10 @@ const Room = require('../models/room.model');
 const createDevice = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { name, description, pinNumber, roomId } = req.body;
+        const { name, description, pinNumber, roomId, categoryId } = req.body;
 
         if (!name) res.status(500).json({ message: "Must Provide Device Name" });
+        if (!categoryId) res.status(500).json({ message: "Must Provide Device Category" });
         if (!pinNumber) res.status(500).json({ message: "Must Provide Pin Number" });
         if (!roomId) res.status(500).json({ message: "Must Provide Room Id" });
 
@@ -21,6 +22,7 @@ const createDevice = async (req, res) => {
         if (pinNumberUsed) res.status(400).json({ message: "Pin Number aleady used try to use another one" });
         const newDevice = new Device({
             name,
+            categoryId,
             description,
             pinNumber,
             roomId,

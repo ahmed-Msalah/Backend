@@ -8,8 +8,6 @@ const createRoom = async (req, res) => {
         const userId = req.user.id;
         const { name, description } = req.body;
 
-
-        console.log(name, description)
         if (!name) res.status(400).json({ message: "You Must Provide Name" });
 
         const newRoom = new Room({ name, description, userId });
@@ -50,8 +48,9 @@ const deleteRoom = async (req, res) => {
         }
 
         const deletedRoom = await Room.findOneAndDelete({ _id: roomId, userId });
+        const deletedDevice = await Device.deleteMany({ roomId: { $in: deletedRoom._id } });
 
-        if (deletedRoom) res.status(200).json({ message: "Room Deleted Successfully" });
+        if (deletedRoom && deletedDevice) res.status(200).json({ message: "Room Deleted Successfully" });
         else res.status(400).json({ message: "Deletion Failed" });
 
     } catch (error) {
@@ -83,17 +82,37 @@ const getRoom = async (req, res) => {
     }
 };
 
-
 const getAllRoom = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const roomsData = await Room.find({ userId });
+        const roomsData = await Room.find({ userId }).lean();
 
-        res.status(201).json({ rooms: roomsData });
+        const roomIds = roomsData.map(room => room._id);
+
+        const devices = await Device.find({ roomId: { $in: roomIds } }).select("_id roomId").lean();
+
+        const roomsMap = {};
+        roomsData.forEach(room => {
+            roomsMap[room._id.toString()] = {
+                ...room,
+                roomDevices: []  
+            };
+        });
+
+        devices.forEach(device => {
+            const roomIdStr = device.roomId.toString();
+            if (roomsMap[roomIdStr]) {
+                roomsMap[roomIdStr].roomDevices.push(device._id);
+            }
+        });
+
+        const rooms = Object.values(roomsMap);
+
+        res.status(200).json({ rooms });
     } catch (error) {
-        res.status(500).json({ message: error.message })
+        res.status(500).json({ message: error.message });
     }
-}
+};
 
 module.exports = { createRoom, updateRoom, deleteRoom, getRoom, getAllRoom }

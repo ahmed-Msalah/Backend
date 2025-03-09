@@ -6,6 +6,7 @@ const userRouter = require('./src/routes/user.route.js');
 const reportRouter = require('./src/routes/reports.rooutes.js');
 const roomRouter = require('./src/routes/room.route.js');
 const deviceRouter = require('./src/routes/device.route.js');
+const categoryRouter = require('./src/routes/category.route.js');
 
 dotenv.config();
 
@@ -18,9 +19,10 @@ app.use(express.json());
 // Routes
 app.use('/api', authRouter);
 app.use('/api/users', userRouter);
-app.use("/api/reports",reportRouter );
-app.use("/api/room",  roomRouter);
-app.use("/api/device",  deviceRouter);
+app.use("/api/reports", reportRouter);
+app.use("/api/room", roomRouter);
+app.use("/api/device", deviceRouter);
+app.use("/api/category", categoryRouter)
 
 
 app.use((req, res, next) => {
