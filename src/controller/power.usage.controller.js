@@ -20,7 +20,7 @@ const getHistoricalUsage = async (deviceIds) => {
 
 export const recoredPowerUsage = async (req, res) => {
     try {
-        const { roomId } = req.parmas;
+        const { roomId } = req.params;
         const { totalUsage } = req.body;
 
         const devices = await Device.find({ roomId });
@@ -29,7 +29,7 @@ export const recoredPowerUsage = async (req, res) => {
         }
 
         const devicesId = devices.map(device => device._id);
-        const devicesHistory = await getHistoricalUsage(deviceIds);
+        const devicesHistory = await getHistoricalUsage(devicesId);
 
         const prompt = `
         We have ${totalUsage} watts consumed across ${devices.length} IoT devices.
@@ -37,7 +37,7 @@ export const recoredPowerUsage = async (req, res) => {
         
         Devices:
         ${devices.map(device => 
-            `Device ${device._id} (Past Usage: ${historicalUsage[device._id] || 0}Wh)`
+            `Device ${device._id} (Past Usage: ${devicesHistory[device._id] || 0}Wh)`
         ).join("\n")}
         
         Distribute the total power consumption based only on historical usage.
