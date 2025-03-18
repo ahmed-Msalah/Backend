@@ -29,8 +29,8 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ['customer', 'admin'],
-      uefault: 'customer',
+      enum: ['user', 'admin'],
+      uefault: 'user',
     },
 
     verificationCode: { type: String },
@@ -42,7 +42,8 @@ const userSchema = new mongoose.Schema(
     },
 
     facebookLogin: {
-      type: Boolean, default: false
+      type: Boolean,
+      default: false,
     },
     googleLogin: {
       type: Boolean,
