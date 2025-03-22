@@ -22,7 +22,9 @@ const createAccount = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
     const verificationCodeExpires = new Date(Date.now() + 60 * 60 * 1000);
 
     const newUser = new User({
@@ -41,10 +43,12 @@ const createAccount = async (req, res) => {
 
     const token = generateToken(createdUser);
 
-    res.status(201).json({
-      message: 'Account created successfully',
-      data: { id: createdUser.id, token },
-    });
+    res
+      .status(201)
+      .json({
+        message: 'Account created successfully',
+        data: { id: createdUser.id, token },
+      });
   } catch (error) {
     console.error('Error creating account:', error);
     res.status(500).json({ message: 'Internal server error' });
@@ -56,7 +60,9 @@ const verifyEmail = async (req, res) => {
     const { id, code } = req.body;
 
     if (!id || !code) {
-      return res.status(400).json({ message: 'User ID and verification code are required.' });
+      return res
+        .status(400)
+        .json({ message: 'User ID and verification code are required.' });
     }
 
     const user = await User.findById(id);
@@ -69,9 +75,10 @@ const verifyEmail = async (req, res) => {
       return res.status(400).json({ message: 'Account is already verified.' });
     }
 
-    if (Date.now() > new Date(user.verificationCodeExpires).getTime()) {
+    if (new Date() > user.verificationCodeExpires) {
       return res.status(400).json({
-        message: 'Verification code has expired. Please request a new verification code.',
+        message:
+          'Verification code has expired. Please request a new verification code.',
       });
     }
 
@@ -85,10 +92,14 @@ const verifyEmail = async (req, res) => {
     user.verificationCodeExpires = undefined;
     await user.save();
 
-    res.status(200).json({ message: 'Account has been successfully verified!' });
+    res
+      .status(200)
+      .json({ message: 'Account has been successfully verified!' });
   } catch (error) {
     console.error('Error verifying email:', error);
-    res.status(500).json({ message: 'An error occurred while verifying the account.' });
+    res
+      .status(500)
+      .json({ message: 'An error occurred while verifying the account.' });
   }
 };
 
@@ -101,9 +112,12 @@ const resendVerficationCode = async (req, res) => {
 
     if (!user) return res.status(404).json({ message: 'User Not Found' });
 
-    if (user.verified) return res.status(400).json({ message: 'Account is already verified.' });
+    if (user.verified)
+      return res.status(400).json({ message: 'Account is already verified.' });
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000
+    ).toString();
     const verificationCodeExpires = new Date(Date.now() + 60 * 60 * 1000);
 
     user.verificationCode = verificationCode;
@@ -113,7 +127,9 @@ const resendVerficationCode = async (req, res) => {
 
     resendVerificationEmail(user.email, user.username, verificationCode);
 
-    res.status(201).json({ message: 'Check Your Email To Use The Verification Code' });
+    res
+      .status(201)
+      .json({ message: 'Check Your Email To Use The Verification Code' });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -124,7 +140,9 @@ const login = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required.' });
+      return res
+        .status(400)
+        .json({ message: 'Email and password are required.' });
     }
 
     const user = await User.findOne({ email });
@@ -148,7 +166,7 @@ const login = async (req, res) => {
         id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role,
+        role: user.role
       },
     });
   } catch (error) {
@@ -189,7 +207,9 @@ const verifyResetCode = async (req, res) => {
     const { id, code } = req.body;
 
     if (!id || !code) {
-      return res.status(400).json({ message: 'User ID and verification code are required.' });
+      return res
+        .status(400)
+        .json({ message: 'User ID and verification code are required.' });
     }
 
     const user = await User.findById(id);
@@ -198,9 +218,10 @@ const verifyResetCode = async (req, res) => {
       return res.status(404).json({ message: 'User not found.' });
     }
 
-    if (Date.now() > new Date(user.verificationCodeExpires).getTime()) {
+    if (new Date() > user.resetPasswordExpires) {
       return res.status(400).json({
-        message: 'Verification code has expired. Please request a new verification code.',
+        message:
+          'Verification code has expired. Please request a new verification code.',
       });
     }
 
@@ -213,9 +234,13 @@ const verifyResetCode = async (req, res) => {
     user.resetPasswordVerified = true;
     await user.save();
 
-    res.status(200).json({ message: 'Account has been successfully verified!' });
+    res
+      .status(200)
+      .json({ message: 'Account has been successfully verified!' });
   } catch (error) {
-    res.status(500).json({ message: 'An error occurred while verifying the account.' });
+    res
+      .status(500)
+      .json({ message: 'An error occurred while verifying the account.' });
   }
 };
 
@@ -224,7 +249,9 @@ const resetPassword = async (req, res) => {
     const { id, new_password } = req.body;
 
     if (!id || !new_password) {
-      return res.status(400).json({ message: 'User ID and New Password  are required.' });
+      return res
+        .status(400)
+        .json({ message: 'User ID and New Password  are required.' });
     }
 
     const user = await User.findById(id);
@@ -234,7 +261,9 @@ const resetPassword = async (req, res) => {
     }
 
     if (!user.resetPasswordVerified) {
-      return res.status(400).json({ message: 'You Must Verified Your Email for reset Password' });
+      return res
+        .status(400)
+        .json({ message: 'You Must Verified Your Email for reset Password' });
     }
 
     const hashedPassword = await bcrypt.hash(new_password, 10);
@@ -245,7 +274,9 @@ const resetPassword = async (req, res) => {
 
     res.status(200).json({ message: 'Password Change Sucessfully' });
   } catch (error) {
-    res.status(500).json({ message: 'An error occurred while verifying the account.' });
+    res
+      .status(500)
+      .json({ message: 'An error occurred while verifying the account.' });
   }
 };
 
