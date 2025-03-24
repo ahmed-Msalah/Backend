@@ -16,14 +16,14 @@ client.on("message", async (topic, message) => {
   try {
     if (topic === "sensor/reading") {
       const parsedMessage = JSON.parse(message.toString());
-      const { pinNumber, usage } = parsedMessage;
+      const { pinNumber, userId, usage } = parsedMessage;
 
       if (!pinNumber || isNaN(usage)) {
         console.error("Invalid data received:", parsedMessage);
         return;
       }
 
-      const sensor = await Sensor.find({ pinNumber });
+      const sensor = await Sensor.find({ pinNumber, userId });
       const devices = await Device.find({ roomId: sensor.roomId })
 
       if (!devices.length) {
@@ -60,8 +60,8 @@ client.on("message", async (topic, message) => {
     if (topic === "device/on") {
       const deviceData = JSON.parse(message.toString());
 
-      const room = await Room.findOne({userId: deviceData.userId})
-      const existingDevice = await Device.findOne({pinNumber: deviceData.pinNumber, roomId: room._id});
+      const room = await Room.findOne({ userId: deviceData.userId })
+      const existingDevice = await Device.findOne({ pinNumber: deviceData.pinNumber, roomId: room._id });
 
       if (existingDevice) {
         await Device.updateOne({ _id: existingDevice._id }, { status: "ON" });
@@ -71,8 +71,8 @@ client.on("message", async (topic, message) => {
     if (topic === "device/off") {
       const deviceData = JSON.parse(message.toString());
 
-      const room = await Room.findOne({userId: deviceData.userId})
-      const existingDevice = await Device.findOne({pinNumber: deviceData.pinNumber, roomId: room._id});
+      const room = await Room.findOne({ userId: deviceData.userId })
+      const existingDevice = await Device.findOne({ pinNumber: deviceData.pinNumber, roomId: room._id });
 
       if (existingDevice) {
         await Device.updateOne({ _id: existingDevice._id }, { status: "OFF" });
