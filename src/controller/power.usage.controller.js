@@ -3,7 +3,7 @@ import PowerUsage from "../models/power.usage.model";
 import { getOpenAIResponse } from "../service/open.api.service";
 
 
-const getHistoricalUsage = async (deviceIds) => {
+export const getHistoricalUsage = async (deviceIds) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -36,14 +36,14 @@ export const recoredPowerUsage = async (req, res) => {
         Each device has historical usage data for the last 7 days.
         
         Devices:
-        ${devices.map(device => 
+        ${devices.map(device =>
             `Device ${device._id} (Past Usage: ${historicalUsage[device._id] || 0}Wh)`
         ).join("\n")}
         
         Distribute the total power consumption based only on historical usage.
         Output JSON: [{"deviceId": "id", "usage": value}].
         `;
-        
+
 
 
         const aiResponseText = await getOpenAIResponse(prompt);

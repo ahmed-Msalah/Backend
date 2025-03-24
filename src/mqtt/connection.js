@@ -1,51 +1,84 @@
 const mqtt = require("mqtt");
 const PowerUsage = require("../models/power.usage.model");
+const Device = require("../models/device.model");
+const Sensor = require("../models/sensor.model");
+const { getHistoricalUsage } = require("../controller/power.usage.controller");
+const { getOpenAIResponse } = require("../service/open.api.service");
+const Room = require("../models/room.model");
 const client = mqtt.connect("mqtt://your-mqtt-broker-ip");
 
 client.on("connect", () => {
   console.log("Connected to MQTT Broker");
-  client.subscribe("devices/power-usage");
+  client.subscribe("sensor/reading");
 });
 
 client.on("message", async (topic, message) => {
   try {
-    if (topic === "devices/power-usage") {
-      const parsedMessage = JSON.parse(message.toString()); // Assuming JSON format
-      const { deviceId, usage } = parsedMessage;
+    if (topic === "sensor/reading") {
+      const parsedMessage = JSON.parse(message.toString());
+      const { pinNumber, usage } = parsedMessage;
 
-      if (!deviceId || isNaN(usage)) {
-        console.error("❌ Invalid data received:", parsedMessage);
+      if (!pinNumber || isNaN(usage)) {
+        console.error("Invalid data received:", parsedMessage);
         return;
       }
 
-      const newPowerUsage = new PowerUsage({
-        deviceId,
-        usage,
-      });
+      const sensor = await Sensor.find({ pinNumber });
+      const devices = await Device.find({ roomId: sensor.roomId })
 
-      await newPowerUsage.save();
-      console.log(`✅ Power usage stored: ${usage}W from device ${deviceId}`);
+      if (!devices.length) {
+        return res.status(400).json({ message: "No devices found" });
+      }
+
+      const devicesId = devices.map(device => device._id);
+      const devicesHistory = await getHistoricalUsage(devicesId);
+
+      const prompt = `
+      We have ${totalUsage} watts consumed across ${devices.length} IoT devices.
+      Each device has historical usage data for the last 7 days.
+      
+      Devices:
+      ${devices.map(device =>
+        `Device ${device._id} (Past Usage: ${devicesHistory[device._id] || 0}Wh)`
+      ).join("\n")}
+      
+      Distribute the total power consumption based only on historical usage.
+      Output JSON: [{"deviceId": "id", "usage": value}].
+      `;
+
+
+
+      const aiResponseText = await getOpenAIResponse(prompt);
+      const aiResult = JSON.parse(aiResponseText);
+
+
+      const savedUsage = await PowerUsage.insertMany(
+        aiResult.map(d => ({ deviceId: d.deviceId, usage: d.usage }))
+      );
     }
 
-    if (topic === "devices/register") {
+    if (topic === "device/on") {
       const deviceData = JSON.parse(message.toString());
 
-      // Check if the device already exists
-      const existingDevice = await Device.findOne({ deviceId: deviceData.deviceId });
-      if (existingDevice) return console.log("Device already exists:", deviceData.deviceId);
+      const room = await Room.findOne({userId: deviceData.userId})
+      const existingDevice = await Device.findOne({pinNumber: deviceData.pinNumber, roomId: room._id});
 
-      // Save new device to the database
-      const newDevice = new Device({
-        deviceId: deviceData.deviceId,
-        name: deviceData.name || "New Device",
-        description: deviceData.description || "",
-        status: deviceData.status || "OFF",
-        roomId: deviceData.roomId,
-      });
-
-      await newDevice.save();
-      console.log("Device registered successfully:", newDevice);
+      if (existingDevice) {
+        await Device.updateOne({ _id: existingDevice._id }, { status: "ON" });
+      }
     }
+
+    if (topic === "device/off") {
+      const deviceData = JSON.parse(message.toString());
+
+      const room = await Room.findOne({userId: deviceData.userId})
+      const existingDevice = await Device.findOne({pinNumber: deviceData.pinNumber, roomId: room._id});
+
+      if (existingDevice) {
+        await Device.updateOne({ _id: existingDevice._id }, { status: "OFF" });
+      }
+    }
+
   } catch (error) {
     console.error("Error storing data:", error);
   }
