@@ -2,6 +2,7 @@ const PowerUsage = require('../models/power.usage.model.js');
 const User = require('../models/user.model.js');
 const bcrypt = require('bcrypt');
 const { getUserRecomndations } = require('../service/open.api.service.js');
+const Room = require('../models/room.model.js');
 
 
 const getAllUsers = async (req, res) => {
@@ -120,7 +121,7 @@ const changePassword = async (req, res) => {
 
 const getRecommendations = async (req, res) => {
   try {
-    const { userId } = req.user.id;
+    const userId = req.user.id;
 
     const usageData = await PowerUsage.find({ userId });
 
@@ -135,4 +136,40 @@ const getRecommendations = async (req, res) => {
   }
 }
 
-module.exports = { deleteUserById, getUserById, updateUserById, getAllUsers, changePassword, getRecommendations };
+const calculateAverageCost = async (req, res) => {
+  try {
+    const ELECTRICITY_TARIFF = 0.75;
+    const userId = req.user.id;
+
+    // Get all rooms for the user
+    const rooms = await Room.find({ userId }).select("_id");
+    const roomIds = rooms.map(room => room._id);
+
+    // Get all running devices
+    const devices = await Device.find({
+      roomId: { $in: roomIds },
+    }).select("_id name");
+
+    if (devices.length === 0) {
+      return res.status(200).json({ averageCost: 0, message: "No running devices" });
+    }
+
+    const deviceIds = devices.map(device => device._id);
+    const usages = await PowerUsage.find({ deviceId: { $in: deviceIds } });
+
+    let totalCost = 0;
+    let totalDevices = devices.length;
+
+    usages.forEach(record => {
+      totalCost += record.usage * ELECTRICITY_TARIFF;
+    });
+
+    let averageCost = totalCost / totalDevices;
+
+    res.status(200).json({ averageCost });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { deleteUserById, getUserById, updateUserById, getAllUsers, changePassword, getRecommendations, calculateAverageCost };

@@ -5,19 +5,18 @@ const Room = require('../models/room.model');
 const createDevice = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { name, description, pinNumber, roomId, categoryId } = req.body;
+        const { name, description, pinNumber, roomId, categoryId, priority } = req.body;
 
         if (!name) res.status(500).json({ message: "Must Provide Device Name" });
         if (!categoryId) res.status(500).json({ message: "Must Provide Device Category" });
         if (!pinNumber) res.status(500).json({ message: "Must Provide Pin Number" });
         if (!roomId) res.status(500).json({ message: "Must Provide Room Id" });
+        if (!priority) res.status(500).json({ message: "Must Provide priority" });
 
 
-        // Check If the Room Already Exist or not:
         const room = await Room.findOne({ _id: roomId, userId });
         if (!room) res.status(400).json({ message: "You Can't Add This Device For This Room" });
 
-        // check if the pinNumber allready used for this user or not
         const pinNumberUsed = await Device.findOne({ roomId, pinNumber });
         if (pinNumberUsed) res.status(400).json({ message: "Pin Number aleady used try to use another one" });
         const newDevice = new Device({
@@ -26,6 +25,7 @@ const createDevice = async (req, res) => {
             description,
             pinNumber,
             roomId,
+            priority
         });
 
         const deviceSaved = await newDevice.save();
@@ -37,7 +37,6 @@ const createDevice = async (req, res) => {
         res.status(500).json({ message: error.message })
     }
 }
-
 
 const updateDevice = async (req, res) => {
 
@@ -101,4 +100,21 @@ const getAllDevices = async (req, res) => {
     }
 }
 
-module.exports = { createDevice, updateDevice, deleteDevice, getAllDevices }
+const getRunningDevices = async (req, res)=>{
+   
+    try {
+        const { userId } = req.params;
+
+        const rooms = await Room.find({ userId }).select("_id");
+        const roomIds = rooms.map(room => room._id);
+
+        const devices = await Device.find({ roomId: { $in: roomIds}, status: "ON" })
+
+        res.status(200).json({ devices });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+
+}
+
+module.exports = { createDevice, updateDevice, deleteDevice, getAllDevices, getRunningDevices }

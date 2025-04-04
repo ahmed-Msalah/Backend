@@ -11,7 +11,7 @@ const deviceSchema = new mongoose.Schema(
         },
         categoryId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Category",
+            ref: "DeviceCategory",
             required: true,
         },
         status: {
@@ -22,6 +22,11 @@ const deviceSchema = new mongoose.Schema(
         pinNumber: {
             type: Number,
             required: true,
+        },
+        priority: {
+            type: Number,
+            required: true,
+            enum: [1, 2, 3],
         },
         roomId: {
             type: mongoose.Schema.Types.ObjectId,
