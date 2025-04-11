@@ -1,4 +1,4 @@
-const Category = require("../models/category.model");
+const Category = require("../models/category.device.model");
 
 
 const getDeviceCategories = async (req, res) => {
