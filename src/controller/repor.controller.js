@@ -15,22 +15,22 @@ exports.getReport = async (req, res) => {
 
     if (period && period !== 'all-time') {
       switch (period) {
-        case 'daily':
+        case 'day':
           startDate = moment().startOf('day').toDate();
           previousStartDate = moment().subtract(1, 'day').startOf('day').toDate();
           previousEndDate = moment().subtract(1, 'day').endOf('day').toDate();
           break;
-        case 'weekly':
+        case 'week':
           startDate = moment().startOf('isoWeek').toDate();
           previousStartDate = moment().subtract(1, 'week').startOf('isoWeek').toDate();
           previousEndDate = moment().subtract(1, 'week').endOf('isoWeek').toDate();
           break;
-        case 'monthly':
+        case 'month':
           startDate = moment().startOf('month').toDate();
           previousStartDate = moment().subtract(1, 'month').startOf('month').toDate();
           previousEndDate = moment().subtract(1, 'month').endOf('month').toDate();
           break;
-        case 'yearly':
+        case 'year':
           startDate = moment().startOf('year').toDate();
           previousStartDate = moment().subtract(1, 'year').startOf('year').toDate();
           previousEndDate = moment().subtract(1, 'year').endOf('year').toDate();
@@ -59,12 +59,76 @@ exports.getReport = async (req, res) => {
     }, {});
     const deviceIds = devices.map(device => device._id);
 
-    const powerUsageData = await PowerUsage.aggregate([
-      { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: startDate, $lte: endDate } } },
-      { $group: { _id: '$deviceId', totalUsage: { $sum: '$usage' } } },
+    // تجميع بيانات استهلاك المده الحالي فقط
+    const powerUsageDataCurrentPeriod = await PowerUsage.aggregate([
+      { 
+        $match: { 
+          deviceId: { $in: deviceIds },
+          createdAt: { $gte: moment().startOf(period).toDate(), $lte: moment().endOf(period).toDate() } // الشهر الحالي
+        }
+      },
+      { 
+        $group: { 
+          _id: '$deviceId', 
+          totalUsage: { $sum: '$usage' }
+        }
+      },
     ]);
 
-    const totalConsumption = powerUsageData.reduce((sum, usage) => sum + usage.totalUsage, 0);
+    // التنسيق لإرجاع الداتا بالشكل المطلوب
+    const devicesCurrentPeriod = powerUsageDataCurrentPeriod.map(usage => ({
+      deviceId: usage._id,
+      deviceName: deviceMap[usage._id]?.name || 'Unknown Device',
+      totalUsage: usage.totalUsage,
+    }));
+
+    // حساب إجمالي استهلاك الشهر الحالي
+    const totalUsageCurrentPeriod = powerUsageDataCurrentPeriod.reduce(
+      (sum, usage) => sum + usage.totalUsage,
+      0
+    );
+
+    // حساب المتوسط الشهري لجميع الأشهر
+    const timePeriod = period; // يمكن أن تكون "year", "month", "week", "day"
+
+// بناء الاستعلام بناءً على التحديد
+const powerUsageDataAllTime = await PowerUsage.aggregate([
+  { 
+    $match: { 
+      deviceId: { $in: deviceIds }, 
+      createdAt: { $lte: endDate } 
+    }
+  },
+  { 
+    $project: {
+      year: { $year: "$createdAt" },
+      month: { $month: "$createdAt" },
+      week: { $week: "$createdAt" },
+      day: { $dayOfMonth: "$createdAt" },
+      usage: 1,
+      timePeriod: timePeriod, 
+    }
+  },
+  { 
+    $group: {
+      _id: {
+        ...(timePeriod === "year" && { year: "$year" }),
+        ...(timePeriod === "month" && { year: "$year", month: "$month" }),
+        ...(timePeriod === "week" && { year: "$year", week: "$week" }),
+        ...(timePeriod === "day" && { year: "$year", month: "$month", day: "$day" })
+      },
+      totalUsage: { $sum: "$usage" }
+    }
+  }
+]);
+
+    
+console.log(powerUsageDataAllTime,powerUsageDataAllTime.length);
+
+    const totalUsageAllTime = powerUsageDataAllTime.reduce((sum, usage) => sum + usage.totalUsage, 0);
+    const totalPeriod = powerUsageDataAllTime.length;
+
+    const averageConsumptionAllTime = totalPeriod > 0 ? totalUsageAllTime / totalPeriod : 0;
 
     let previousPeriodConsumption = null;
     let savingsPercentage = null;
@@ -86,12 +150,12 @@ exports.getReport = async (req, res) => {
       );
 
       savingsPercentage = previousPeriodConsumption
-        ? ((previousPeriodConsumption - totalConsumption) / previousPeriodConsumption) * 100
+        ? ((previousPeriodConsumption - totalUsageCurrentPeriod) / previousPeriodConsumption) * 100
         : 0;
     }
 
     const highestDevice = await PowerUsage.aggregate([
-      { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: startDate, $lte: endDate } } },
+      { $match: { deviceId: { $in: deviceIds }, createdAt: { $gte: moment().startOf('month').toDate(), $lte: moment().endOf('month').toDate() } } },
       { $group: { _id: '$deviceId', total: { $sum: '$usage' } } },
       { $sort: { total: -1 } },
       { $limit: 1 },
@@ -110,16 +174,13 @@ exports.getReport = async (req, res) => {
     const report = {
       userId,
       period: period || 'all-time',
-      totalConsumption,
-      previousPeriodConsumption:
+      totalConsumption: totalUsageCurrentPeriod, 
+      averageConsumption: averageConsumptionAllTime, 
+      previousTotalConsumption:
         period && period !== 'all-time' ? previousPeriodConsumption : undefined,
       savingsPercentage: period && period !== 'all-time' ? savingsPercentage : undefined,
       highestDevice: highestDeviceInfo,
-      devices: powerUsageData.map(usage => ({
-        deviceId: usage._id,
-        deviceName: deviceMap[usage._id]?.name || 'Unknown Device',
-        totalUsage: usage.totalUsage,
-      })),
+      devices: devicesCurrentPeriod, 
     };
 
     res.json(report);
