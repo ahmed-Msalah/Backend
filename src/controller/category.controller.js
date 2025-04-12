@@ -1,5 +1,5 @@
-const Category = require('../models/category.device.model');
 
+const Category = require('../models/category.device.model');
 const getDeviceCategories = async (req, res) => {
   try {
     const categories = await Category.find({});
