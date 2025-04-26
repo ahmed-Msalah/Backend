@@ -21,11 +21,11 @@ exports.calculateBill = usage => {
 };
 
 exports.getTier = usage => {
-  if (usage <= 50) return 'Tier 1';
-  if (usage <= 100) return 'Tier 2';
-  if (usage <= 200) return 'Tier 3';
-  if (usage <= 350) return 'Tier 4';
-  if (usage <= 650) return 'Tier 5';
-  if (usage <= 1000) return 'Tier 6';
-  return 'Tier 7';
+  if (usage <= 50) return '1';
+  if (usage <= 100) return '2';
+  if (usage <= 200) return '3';
+  if (usage <= 350) return '4';
+  if (usage <= 650) return '5';
+  if (usage <= 1000) return '6';
+  return '7';
 };

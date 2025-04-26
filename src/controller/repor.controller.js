@@ -76,11 +76,11 @@ exports.getReport = async (req, res) => {
       },
     ]);
 
-    const devicesCurrentPeriod = powerUsageDataCurrentPeriod.map(usage => ({
-      deviceId: usage._id,
-      deviceName: deviceMap[usage._id]?.name || 'Unknown Device',
-      totalUsage: usage.totalUsage,
-    }));
+    // const devicesCurrentPeriod = powerUsageDataCurrentPeriod.map(usage => ({
+    //   deviceId: usage._id,
+    //   deviceName: deviceMap[usage._id]?.name || 'Unknown Device',
+    //   totalUsage: usage.totalUsage,
+    // }));
 
     const totalUsageCurrentPeriod = powerUsageDataCurrentPeriod.reduce((sum, usage) => sum + usage.totalUsage, 0);
 
@@ -159,16 +159,6 @@ exports.getReport = async (req, res) => {
       { $limit: 1 },
     ]);
 
-    let highestDeviceInfo = null;
-    if (highestDevice.length) {
-      const device = deviceMap[highestDevice[0]._id];
-      highestDeviceInfo = {
-        deviceId: device._id,
-        deviceName: device.name,
-        consumption: highestDevice[0].total,
-      };
-    }
-
     const report = {
       userId,
 
@@ -179,9 +169,7 @@ exports.getReport = async (req, res) => {
       averageConsumption: averageConsumptionAllTime,
       averageCost: averageCostAllTime,
       previousTotalConsumption: previousPeriodConsumption ? previousPeriodConsumption : undefined,
-      savingsPercentage: savingsPercentage ? savingsPercentage : undefined,
-      highestDevice: highestDeviceInfo,
-      devices: devicesCurrentPeriod,
+      savingsPercentage: savingsPercentage ? Number(savingsPercentage.toFixed(2)) : undefined,
     };
 
     res.json(report);
