@@ -12,6 +12,10 @@ const categorySchema = new mongoose.Schema(
       required: true,
       unique: true,
     },
+    iconUrl: {
+      type: String,
+      required: true,
+    },
   },
   { timestamps: true },
 );

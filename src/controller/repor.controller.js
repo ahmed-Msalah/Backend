@@ -8,7 +8,7 @@ exports.getReport = async (req, res) => {
   try {
     const currentYear = moment().year();
     const currentMonth = moment().month();
-    const { userId } = req.params;
+    const userId = req.user.id;
     const { targetPeriod } = req.query;
     const [targetM, targetY] = targetPeriod ? targetPeriod.split('-') : [currentMonth + 1, currentYear];
     const targetMonth = Number(targetM);
