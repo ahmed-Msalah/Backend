@@ -13,10 +13,20 @@ exports.getReport = async (req, res) => {
     const [targetM, targetY] = targetPeriod ? targetPeriod.split('-') : [currentMonth + 1, currentYear];
     const targetMonth = Number(targetM);
     const targetYear = Number(targetY);
-
+    let totalUsageCurrentPeriod, usageCost, Tier, averageConsumptionAllTime, averageCostAllTime;
     if (targetYear > currentYear || (targetYear === currentYear && targetMonth > currentMonth + 1)) {
-      res.status(400).json({ message: 'Invalid Date 😢' });
-      return; // التوقف عن تنفيذ الكود بعد الخطأ
+      return res.status(400).json({
+        userId,
+
+        totalConsumption: 0,
+        consumptionCost: 0,
+
+        Tier: 0,
+        averageConsumption: 0,
+        averageCost: 0,
+        previousTotalConsumption: 0,
+        savingsPercentage: 0,
+      });
     }
 
     let requiredMonth, previousRequiredMonth;
@@ -40,7 +50,16 @@ exports.getReport = async (req, res) => {
 
     if (usageCountInMonth === 0) {
       return res.status(400).json({
-        message: `No usage data found in ${moment(requiredMonth).format('YYYY-MM')}`,
+        userId,
+
+        totalConsumption: 0,
+        consumptionCost: 0,
+
+        Tier: 0,
+        averageConsumption: 0,
+        averageCost: 0,
+        previousTotalConsumption: 0,
+        savingsPercentage: 0,
       });
     }
 
@@ -82,10 +101,10 @@ exports.getReport = async (req, res) => {
     //   totalUsage: usage.totalUsage,
     // }));
 
-    const totalUsageCurrentPeriod = powerUsageDataCurrentPeriod.reduce((sum, usage) => sum + usage.totalUsage, 0);
+    totalUsageCurrentPeriod = powerUsageDataCurrentPeriod.reduce((sum, usage) => sum + usage.totalUsage, 0);
 
-    const usageCost = calculateBill(totalUsageCurrentPeriod);
-    const Tier = getTier(totalUsageCurrentPeriod);
+    usageCost = calculateBill(totalUsageCurrentPeriod);
+    Tier = getTier(totalUsageCurrentPeriod);
 
     const powerUsageDataAllTime = await PowerUsage.aggregate([
       {
@@ -122,8 +141,8 @@ exports.getReport = async (req, res) => {
     const totalPeriod = powerUsageDataAllTime.length;
     console.log(totalCostAllTime, totalUsageAllTime, totalPeriod);
 
-    const averageConsumptionAllTime = totalPeriod > 0 ? totalUsageAllTime / totalPeriod : 0;
-    const averageCostAllTime = totalPeriod > 0 ? totalCostAllTime / totalPeriod : 0;
+    averageConsumptionAllTime = totalPeriod > 0 ? totalUsageAllTime / totalPeriod : 0;
+    averageCostAllTime = totalPeriod > 0 ? totalCostAllTime / totalPeriod : 0;
 
     let previousPeriodConsumption = null;
     let savingsPercentage = null;
