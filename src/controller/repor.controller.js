@@ -25,6 +25,7 @@ exports.getReport = async (req, res) => {
         averageCost: 0,
         previousTotalConsumption: 0,
         savingsPercentage: 0,
+        savingCostPercntage: 0,
         chartData: Array(10).fill(0),
       });
     }
@@ -52,6 +53,7 @@ exports.getReport = async (req, res) => {
         averageCost: 0,
         previousTotalConsumption: 0,
         savingsPercentage: 0,
+        savingCostPercntage: 0,
         chartData: Array(10).fill(0),
       });
     }
@@ -142,6 +144,9 @@ exports.getReport = async (req, res) => {
       ? ((previousPeriodConsumption - totalUsageCurrentPeriod) / previousPeriodConsumption) * 100
       : 0;
 
+    const previousCost = calculateBill(previousPeriodConsumption);
+    const savingCostPercntage = previousCost ? ((previousCost - usageCost) / previousCost) * 100 : 0;
+
     // ====== CHART DATA CALCULATION ======
     const chartData = {};
     const startOfMonth = moment(requiredMonth).startOf('month');
@@ -184,6 +189,7 @@ exports.getReport = async (req, res) => {
       averageCost: averageCostAllTime,
       previousTotalConsumption: previousPeriodConsumption || 0,
       savingsPercentage: savingsPercentage ? Number(savingsPercentage.toFixed(2)) : 0,
+      savingCostPercntage: savingCostPercntage ? Number(savingCostPercntage.toFixed(2)) : 0,
       chartData,
     };
 
