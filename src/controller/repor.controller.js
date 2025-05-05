@@ -6,6 +6,7 @@ const { calculateBill, getTier } = require('../service/usageCaluclation');
 
 exports.getReport = async (req, res) => {
   try {
+    const chartData = {};
     const currentYear = moment().year();
     const currentMonth = moment().month();
     const userId = req.user.id;
@@ -44,7 +45,7 @@ exports.getReport = async (req, res) => {
     });
 
     if (usageCountInMonth === 0) {
-      return res.status(400).json({
+      return res.status(200).json({
         userId,
         totalConsumption: 0,
         consumptionCost: 0,
@@ -54,7 +55,7 @@ exports.getReport = async (req, res) => {
         previousTotalConsumption: 0,
         savingsPercentage: 0,
         savingCostPercntage: 0,
-        chartData: Array(10).fill(0),
+        chartData,
       });
     }
 
@@ -148,7 +149,6 @@ exports.getReport = async (req, res) => {
     const savingCostPercntage = previousCost ? ((previousCost - usageCost) / previousCost) * 100 : 0;
 
     // ====== CHART DATA CALCULATION ======
-    const chartData = {};
     const startOfMonth = moment(requiredMonth).startOf('month');
     const daysInMonth = startOfMonth.daysInMonth();
     const readingsPerPoint = Math.floor(daysInMonth / 10);
