@@ -17,7 +17,7 @@ exports.getReport = async (req, res) => {
     let totalUsageCurrentPeriod, usageCost, Tier, averageConsumptionAllTime, averageCostAllTime;
 
     if (targetYear > currentYear || (targetYear === currentYear && targetMonth > currentMonth + 1)) {
-      return res.status(400).json({
+      return res.status(200).json({
         userId,
         totalConsumption: 0,
         consumptionCost: 0,
