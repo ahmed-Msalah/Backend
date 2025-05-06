@@ -3,6 +3,7 @@ const User = require('../models/user.model.js');
 const bcrypt = require('bcrypt');
 const { getUserRecomndations } = require('../service/open.api.service.js');
 const Room = require('../models/room.model.js');
+const Device = require('../models/device.model.js');
 
 
 const getAllUsers = async (req, res) => {
@@ -121,9 +122,16 @@ const changePassword = async (req, res) => {
 
 const getRecommendations = async (req, res) => {
   try {
+
     const userId = req.user.id;
 
-    const usageData = await PowerUsage.find({ userId });
+    const rooms = await Room.find({ userId }).select('_id');
+    const roomIds = rooms.map(room => room._id);
+
+    const devices = await Device.find({ roomId: { $in: roomIds } });
+    const deviceIds = devices.map(device => device._id);
+
+    const usageData = await PowerUsage.find({ deviceId: { $in: deviceIds } });
 
     if (!usageData.length) {
       return res.status(404).json({ message: "No usage data available." });

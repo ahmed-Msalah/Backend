@@ -1,10 +1,10 @@
-import Device from "../models/device.model";
-import PowerUsage from "../models/power.usage.model";
-import Sensor from "../models/sensor.model";
-import { getOpenAIResponse } from "../service/open.api.service";
+const Device = require('../models/device.model');
+const PowerUsage = require("../models/power.usage.model");
+const Sensor = require("../models/sensor.model");
+const { getOpenAIResponse } = require("../service/open.api.service");
 
 
-export const getHistoricalUsage = async (deviceIds) => {
+ const getHistoricalUsage = async (deviceIds) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -19,7 +19,7 @@ export const getHistoricalUsage = async (deviceIds) => {
     }, {});
 };
 
-export const recoredPowerUsage = async (req, res) => {
+ const recoredPowerUsage = async (req, res) => {
     try {
         const { pinNumber } = req.params;
         const userId = req.user.id;
@@ -54,7 +54,7 @@ export const recoredPowerUsage = async (req, res) => {
         const aiResult = JSON.parse(aiResponseText);
 
 
-        const savedUsage = await PowerUsage.insertMany(
+        await PowerUsage.insertMany(
             aiResult.map(d => ({ deviceId: d.deviceId, usage: d.usage }))
         );
 
@@ -62,3 +62,5 @@ export const recoredPowerUsage = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 }
+
+module.exports = {getHistoricalUsage, recoredPowerUsage}

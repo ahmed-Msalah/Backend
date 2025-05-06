@@ -5,11 +5,29 @@ const Sensor = require("../models/sensor.model");
 const { getHistoricalUsage } = require("../controller/power.usage.controller");
 const { getOpenAIResponse } = require("../service/open.api.service");
 const Room = require("../models/room.model");
-const client = mqtt.connect("mqtt://your-mqtt-broker-ip");
+
+const client = mqtt.connect("mqtts://16e4e8df7324425ca5345bf26bd5aeec.s1.eu.hivemq.cloud:8883", {
+  username: 'ahmed_1',
+  password: 'Arnousa712@2002#',
+  rejectUnauthorized: true
+});
+
 
 client.on("connect", () => {
-  console.log("Connected to MQTT Broker");
   client.subscribe("sensor/reading");
+  client.subscribe("device/on");
+  client.subscribe("device/off");
+  client.subscribe("triger/movement");
+  client.subscribe("triger/noMovement");
+});
+
+
+client.on("error", (err) => {
+  console.error(" MQTT connection error:", err);
+});
+
+client.on("close", () => {
+  console.warn(" MQTT connection closed");
 });
 
 client.on("message", async (topic, message) => {
@@ -79,7 +97,20 @@ client.on("message", async (topic, message) => {
       }
     }
 
+    if (topic === "triger/movement") {
+      const trigerData = JSON.parse(message.toString());
+      await Device.updateOne({ _id: trigerData.deviceId }, { status: "ON" });
+    }
+
+    if (topic === "triger/noMovement") {
+      const trigerData = JSON.parse(message.toString());
+      await Device.updateOne({ _id: trigerData.deviceId }, { status: "OFF" });
+    }
+
   } catch (error) {
     console.error("Error storing data:", error);
   }
 });
+
+
+module.exports = { client };

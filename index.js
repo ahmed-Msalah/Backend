@@ -8,6 +8,8 @@ const roomRouter = require('./src/routes/room.route.js');
 const deviceRouter = require('./src/routes/device.route.js');
 const categoryRouter = require('./src/routes/category.route.js');
 const sensorRouter = require('./src/routes/sensor.route.js');
+const automationRouter = require('./src/routes/automation.route.js');
+const {client } = require('./src/mqtt/connection.js');
 
 dotenv.config();
 
@@ -18,6 +20,16 @@ const PORT = process.env.PORT || 5000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+// MQTT
+setTimeout(() => {
+  if (client.connected) {
+    console.log("🟢 MQTT is connected and running.");
+  } else {
+    console.log("🔴 MQTT is not connected.");
+  }
+}, 2000);
+
 // Routes
 app.use('/api', authRouter);
 app.use('/api/users', userRouter);
@@ -26,6 +38,7 @@ app.use("/api/room", roomRouter);
 app.use("/api/device", deviceRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/sensor", sensorRouter);
+app.use("/api/automation", automationRouter);
 
 
 app.use((req, res, next) => {

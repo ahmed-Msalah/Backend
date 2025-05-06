@@ -51,6 +51,7 @@ Output JSON format:
 
 const getOpenAIResponse = async (prompt) => {
     try {
+
         const response = await axios.post(
             "https://api.openai.com/v1/completions",
             {
