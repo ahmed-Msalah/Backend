@@ -80,6 +80,10 @@ const AutomationSchema = new Schema({
     required: true,
     ref: 'User',
   },
+  name: {
+    type: String,
+    required: true,
+  },
   triggers: {
     type: [TriggerSchema],
     required: true,
