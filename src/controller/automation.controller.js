@@ -2,23 +2,20 @@ const Automation = require('../models/automation.model');
 const Device = require('../models/device.model');
 const Room = require('../models/room.model');
 
-
 const TrigerType = {
-  SENSOR: "SENSOR",
-  SCHEDULE: "SCHEDULE"
+  SENSOR: 'SENSOR',
+  SCHEDULE: 'SCHEDULE',
 };
 
 const ConditionType = {
-  DEVICE: "DEVICE",
-  SENSOR: "SENSOR"
+  DEVICE: 'DEVICE',
+  SENSOR: 'SENSOR',
 };
 
-
 const ActionType = {
-  NOTIFICATION: "NOTIFICATION",
-  SENSOR: "DEVICE"
-}
-
+  NOTIFICATION: 'NOTIFICATION',
+  SENSOR: 'DEVICE',
+};
 
 const addAutomation = async (req, res) => {
   try {
@@ -45,15 +42,15 @@ const getUserAutomations = async (req, res) => {
 
     const automations = await Automation.find({ userId })
       .populate({
-        path: 'trigger.sensorId',
+        path: 'triggers.sensorId',
         select: 'type sensorId value',
       })
       .populate({
-        path: 'action.data.deviceId',
+        path: 'actions.data.deviceId',
         select: 'type data',
       })
       .populate({
-        path: 'condition.deviceId',
+        path: 'conditions.deviceId',
         select: 'type sensorId state',
       })
       .exec();
@@ -65,7 +62,7 @@ const getUserAutomations = async (req, res) => {
     }
 
     res.status(200).json({
-      automations
+      automations,
     });
   } catch (error) {
     res.status(500).json({
@@ -74,7 +71,6 @@ const getUserAutomations = async (req, res) => {
     });
   }
 };
-
 
 const deleteAutomation = async (req, res) => {
   try {
@@ -136,6 +132,4 @@ const updateAutomation = async (req, res) => {
   }
 };
 
-
 module.exports = { addAutomation, getUserAutomations, deleteAutomation, updateAutomation };
-
