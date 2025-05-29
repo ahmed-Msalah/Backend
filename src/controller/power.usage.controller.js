@@ -1,10 +1,11 @@
 const Device = require('../models/device.model');
 const PowerUsage = require("../models/power.usage.model");
+const PowerSavingMode = require("../models/power.saving.mode.model");
 const Sensor = require("../models/sensor.model");
 const { getOpenAIResponse } = require("../service/open.api.service");
 
 
- const getHistoricalUsage = async (deviceIds) => {
+const getHistoricalUsage = async (deviceIds) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
@@ -19,7 +20,7 @@ const { getOpenAIResponse } = require("../service/open.api.service");
     }, {});
 };
 
- const recoredPowerUsage = async (req, res) => {
+const recoredPowerUsage = async (req, res) => {
     try {
         const { pinNumber } = req.params;
         const userId = req.user.id;
@@ -63,4 +64,43 @@ const { getOpenAIResponse } = require("../service/open.api.service");
     }
 }
 
-module.exports = {getHistoricalUsage, recoredPowerUsage}
+const getPowerSavingModes = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const modes = await PowerSavingMode.find({ userId });
+
+        return res.status(201).json({ modes });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+}
+
+const updatePowerSavingMode = async (req, res) => {
+    try {
+        const { modeId } = req.params;
+        const userId = req.user.id;
+        const body = req.body;
+
+        if (typeof usage !== "number" || usage < 0) {
+            return res.status(400).json({ message: "Invalid usage value" });
+        }
+
+        const result = await PowerSavingMode.updateOne(
+            { _id: modeId, userId },
+            { $set: { ...body } }
+        );
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ message: "Mode not found or no changes made" });
+        }
+
+        return res.status(200).json({ message: "Mode updated successfully" });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+};
+
+
+module.exports = { getHistoricalUsage, recoredPowerUsage, getPowerSavingModes, updatePowerSavingMode }

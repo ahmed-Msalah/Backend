@@ -26,7 +26,7 @@ const deviceSchema = new mongoose.Schema(
         priority: {
             type: Number,
             required: true,
-            enum: [1, 2, 3],
+            enum: [1, 2, 3, 4],
         },
         roomId: {
             type: mongoose.Schema.Types.ObjectId,
