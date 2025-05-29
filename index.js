@@ -10,6 +10,8 @@ const categoryRouter = require('./src/routes/category.route.js');
 const sensorRouter = require('./src/routes/sensor.route.js');
 const automationRouter = require('./src/routes/automation.route.js');
 const {client } = require('./src/mqtt/connection.js');
+require("./src/buit.in.automation/power.saving.mode.js");
+
 
 dotenv.config();
 

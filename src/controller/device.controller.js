@@ -99,7 +99,6 @@ const getAllDevices = async (req, res) => {
 
     const deviceIds = devices.map(device => device._id);
 
-    // حساب بداية الشهر الحالي
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
@@ -151,4 +150,33 @@ const getRunningDevices = async (req, res) => {
   }
 };
 
-module.exports = { createDevice, updateDevice, deleteDevice, getAllDevices, getRunningDevices };
+
+const toggleDevice = async (req, res)=>{
+    try{
+             const {deviceId} = req.params;
+             const {status} = req.query;
+             const userId = req.user.id;
+
+             const room = await Room.findOne({userId});
+             if (!room) 
+              {
+                return res.status(404).json({message: "Device NOt Found"});
+              }
+             const device = await Device.findOne({_id: deviceId, roomId: room._id});
+
+             if (!device) 
+             {
+               return res.status(404).json({message: "Device NOt Found"});
+             }
+
+             const toggled = await Device.updateOne({_id: deviceId}, {status});
+
+             if (toggled) return res.status(201).json({message: "Device Status Updated Sucessfully"});
+
+    }
+    catch(error) {
+       res.status(500).json({message: error.message});
+    }
+}
+
+module.exports = { createDevice, updateDevice, deleteDevice, getAllDevices, getRunningDevices, toggleDevice };

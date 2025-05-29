@@ -4,6 +4,7 @@ const bcrypt = require('bcrypt');
 const { getUserRecomndations } = require('../service/open.api.service.js');
 const Room = require('../models/room.model.js');
 const Device = require('../models/device.model.js');
+const Automation = require('../models/automation.model.js');
 
 
 const getAllUsers = async (req, res) => {
@@ -65,29 +66,47 @@ const updateUserById = async (req, res) => {
   }
 };
 
+
 const deleteUserById = async (req, res) => {
   try {
     const id = req.params.id.trim();
     const { user } = req;
 
-    if (user.id === id || user.role === 'admin') {
-      const deletedUser = await User.findByIdAndDelete(id);
-
-      if (!deletedUser) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-
-      res.status(200).json({ message: 'User deleted successfully' });
+    if (user.id !== id && user.role !== 'admin') {
+      return res.status(401).json({ message: 'Forbidden' });
     }
 
-    else res.status(401).json({ message: "Forbeddin" });
+    const deletedUser = await User.findByIdAndDelete(id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
+    const rooms = await Room.find({ userId: id });
+    const roomIds = rooms.map(room => room._id);
 
+    await Sensor.deleteMany({ userId: id });
+
+    const devices = await Device.find({ roomId: { $in: roomIds } });
+    const deviceIds = devices.map(device => device._id);
+
+    await Device.deleteMany({ roomId: { $in: roomIds } });
+
+    await PowerUsage.deleteMany({ deviceId: { $in: deviceIds } });
+
+    await Room.deleteMany({ userId: id });
+
+    await Automation.deleteMany({ userId: id });
+
+    return res.status(200).json({ message: 'User and related data deleted successfully' });
 
   } catch (error) {
-    res.status(500).json({ message: 'Server error', EROOOORr: error.message });
+    return res.status(500).json({
+      message: 'Server error',
+      error: error.message,
+    });
   }
 };
+
 
 const changePassword = async (req, res) => {
   try {

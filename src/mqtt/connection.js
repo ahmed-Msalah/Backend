@@ -33,6 +33,7 @@ client.on("close", () => {
 client.on("message", async (topic, message) => {
   try {
     if (topic === "sensor/reading") {
+      console.log("topic", message);
       const parsedMessage = JSON.parse(message.toString());
       const { pinNumber, userId, usage } = parsedMessage;
 
