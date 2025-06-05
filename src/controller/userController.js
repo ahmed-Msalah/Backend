@@ -1,5 +1,5 @@
-const moment = require('moment');
 const PowerUsage = require('../models/power.usage.model.js');
+const moment = require('moment');
 const User = require('../models/user.model.js');
 const bcrypt = require('bcrypt');
 const { getUserRecomndations } = require('../service/GeminiApiService.js');
@@ -130,7 +130,7 @@ const changePassword = async (req, res) => {
 const getRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
-
+    const { lang } = req.query || 'english';
     // جلب الغرف الخاصة بالمستخدم
     const rooms = await Room.find({ userId }).select('_id');
     const roomIds = rooms.map(room => room._id);
@@ -138,7 +138,7 @@ const getRecommendations = async (req, res) => {
     // جلب الأجهزة داخل هذه الغرف
     const devices = await Device.find({ roomId: { $in: roomIds } });
     const deviceIds = devices.map(device => device._id);
-
+    const deviceIdAndName = devices.map(dev => ({ id: dev._id, name: dev.name }));
     // تحديد بداية الشهر الحالي باستخدام moment
     const startOfMonth = moment().startOf('month').toDate();
 
@@ -160,7 +160,7 @@ const getRecommendations = async (req, res) => {
     }));
 
     // استدعاء دالة التوصيات وتمرير البيانات المصفاة
-    const recommendations = await getUserRecomndations(filteredUsageData);
+    const recommendations = await getUserRecomndations(filteredUsageData, deviceIdAndName, lang);
 
     res.json({ recommendations });
   } catch (error) {
