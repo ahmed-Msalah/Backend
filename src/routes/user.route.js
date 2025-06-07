@@ -12,8 +12,6 @@ const {
 const { authenticateToken } = require('../middleware/authorized.middleware.js');
 const { getPowerSavingModes, updatePowerSavingMode } = require('../controller/power.usage.controller.js');
 
-
-
 Router.route('/').get(authenticateToken, getAllUsers);
 Router.route('/:id').get(authenticateToken, getUserById);
 Router.route('/:id').put(authenticateToken, updateUserById);

@@ -2,23 +2,20 @@ const Automation = require('../models/automation.model');
 const Device = require('../models/device.model');
 const Room = require('../models/room.model');
 
-
 const TrigerType = {
-  SENSOR: "SENSOR",
-  SCHEDULE: "SCHEDULE"
+  SENSOR: 'SENSOR',
+  SCHEDULE: 'SCHEDULE',
 };
 
 const ConditionType = {
-  DEVICE: "DEVICE",
-  SENSOR: "SENSOR"
+  DEVICE: 'DEVICE',
+  SENSOR: 'SENSOR',
 };
 
-
 const ActionType = {
-  NOTIFICATION: "NOTIFICATION",
-  SENSOR: "DEVICE"
-}
-
+  NOTIFICATION: 'NOTIFICATION',
+  SENSOR: 'DEVICE',
+};
 
 const addAutomation = async (req, res) => {
   try {
@@ -30,7 +27,7 @@ const addAutomation = async (req, res) => {
       triggers,
       actions,
       conditions,
-      name
+      name,
     });
 
     const saved = await newAutomation.save();
@@ -46,15 +43,15 @@ const getUserAutomations = async (req, res) => {
 
     const automations = await Automation.find({ userId })
       .populate({
-        path: 'trigger.sensorId',
+        path: 'triggers.sensorId',
         select: 'type sensorId value',
       })
       .populate({
-        path: 'action.data.deviceId',
+        path: 'actions.data.deviceId',
         select: 'type data',
       })
       .populate({
-        path: 'condition.deviceId',
+        path: 'conditions.deviceId',
         select: 'type sensorId state',
       })
       .exec();
@@ -66,7 +63,7 @@ const getUserAutomations = async (req, res) => {
     }
 
     res.status(200).json({
-      automations
+      automations,
     });
   } catch (error) {
     res.status(500).json({
@@ -75,7 +72,6 @@ const getUserAutomations = async (req, res) => {
     });
   }
 };
-
 
 const deleteAutomation = async (req, res) => {
   try {
@@ -137,6 +133,8 @@ const updateAutomation = async (req, res) => {
   }
 };
 
+module.exports = { addAutomation, getUserAutomations, deleteAutomation, updateAutomation };
+
 const applyAutomation = async (req, res) => {
   try {
     const { automationId } = req.params;
@@ -148,49 +146,47 @@ const applyAutomation = async (req, res) => {
 
     await executeActions(automation.actions, userId);
 
-    return res.status(200).json({ message: "Automation applied successfully" });
-
+    return res.status(200).json({ message: 'Automation applied successfully' });
   } catch (error) {
     console.error(error);
 
-    if (error.message === "NOT_FOUND") {
-      return res.status(404).json({ message: "Automation not found or unauthorized" });
+    if (error.message === 'NOT_FOUND') {
+      return res.status(404).json({ message: 'Automation not found or unauthorized' });
     }
 
-    if (error.message === "CONDITION_NOT_MET") {
-      return res.status(400).json({ message: "Conditions were not met" });
+    if (error.message === 'CONDITION_NOT_MET') {
+      return res.status(400).json({ message: 'Conditions were not met' });
     }
 
-    if (error.message === "INVALID_NOTIFICATION_DATA") {
-      return res.status(400).json({ message: "Notification data is missing" });
+    if (error.message === 'INVALID_NOTIFICATION_DATA') {
+      return res.status(400).json({ message: 'Notification data is missing' });
     }
 
-    if (error.message === "DEVICE_NOT_FOUND") {
-      return res.status(404).json({ message: "Device in action not found" });
+    if (error.message === 'DEVICE_NOT_FOUND') {
+      return res.status(404).json({ message: 'Device in action not found' });
     }
 
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-
 async function fetchAutomation(automationId, userId) {
   const automation = await Automation.findOne({ _id: automationId, userId });
-  if (!automation) throw new Error("NOT_FOUND");
+  if (!automation) throw new Error('NOT_FOUND');
   return automation;
 }
 
 async function checkConditions(conditions = []) {
   for (const condition of conditions) {
-    if (condition.type === "DEVICE") {
+    if (condition.type === 'DEVICE') {
       const device = await Device.findById(condition.deviceId);
       if (!device || device.state !== condition.state) {
-        throw new Error("CONDITION_NOT_MET");
+        throw new Error('CONDITION_NOT_MET');
       }
-    } else if (condition.type === "SENSOR") {
+    } else if (condition.type === 'SENSOR') {
       const sensor = await Sensor.findById(condition.deviceId);
       if (!sensor || sensor.value !== condition.state) {
-        throw new Error("CONDITION_NOT_MET");
+        throw new Error('CONDITION_NOT_MET');
       }
     }
   }
@@ -198,17 +194,15 @@ async function checkConditions(conditions = []) {
 
 async function executeActions(actions, userId) {
   for (const action of actions) {
-    if (action.type === "NOTIFICATION") {
+    if (action.type === 'NOTIFICATION') {
       const { title, message } = action.data;
-      if (!title || !message) throw new Error("INVALID_NOTIFICATION_DATA");
+      if (!title || !message) throw new Error('INVALID_NOTIFICATION_DATA');
 
       await NotificationService.send({ userId, title, message });
-    }
-
-    else if (action.type === "DEVICE") {
+    } else if (action.type === 'DEVICE') {
       const { deviceId, state } = action.data;
       const device = await Device.findById(deviceId);
-      if (!device) throw new Error("DEVICE_NOT_FOUND");
+      if (!device) throw new Error('DEVICE_NOT_FOUND');
 
       device.state = state;
       await device.save();
@@ -216,6 +210,4 @@ async function executeActions(actions, userId) {
   }
 }
 
-
 module.exports = { addAutomation, getUserAutomations, deleteAutomation, updateAutomation, applyAutomation };
-
