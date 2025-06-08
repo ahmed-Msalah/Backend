@@ -9,7 +9,8 @@ const deviceRouter = require('./src/routes/device.route.js');
 const categoryRouter = require('./src/routes/category.route.js');
 const sensorRouter = require('./src/routes/sensor.route.js');
 const automationRouter = require('./src/routes/automation.route.js');
-const paymentRoute = require('./src/routes/payment.route.js');
+const paymentRouter = require('./src/routes/payment.route.js');
+const notificationRouter = require('./src/routes/notification.route.js');
 const { client } = require('./src/mqtt/connection.js');
 require("./src/buit.in.automation/power.saving.mode.js");
 const bodyParser = require('body-parser');
@@ -48,7 +49,8 @@ app.use("/api/device", deviceRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/sensor", sensorRouter);
 app.use("/api/automation", automationRouter);
-app.use("/api/payment", paymentRoute);
+app.use("/api/payment", paymentRouter);
+app.use("/api/notification", notificationRouter);
 
 
 app.use((req, res, next) => {

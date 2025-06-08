@@ -42,7 +42,7 @@ cron.schedule("*/15 * * * *", async () => {
 
         if (shouldTurnOff && deviceStatus === "ON") {
           await Device.updateOne({ _id: deviceId }, { status: "OFF" });
-          console.log(`⚡ Device ${device.name} turned OFF (mode: ${modeType}, priority: ${priority})`);
+          console.log(` Device ${device.name} turned OFF (mode: ${modeType}, priority: ${priority})`);
         }
       }
     }
