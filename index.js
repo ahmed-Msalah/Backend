@@ -9,8 +9,10 @@ const deviceRouter = require('./src/routes/device.route.js');
 const categoryRouter = require('./src/routes/category.route.js');
 const sensorRouter = require('./src/routes/sensor.route.js');
 const automationRouter = require('./src/routes/automation.route.js');
-const {client } = require('./src/mqtt/connection.js');
+const paymentRoute = require('./src/routes/payment.route.js');
+const { client } = require('./src/mqtt/connection.js');
 require("./src/buit.in.automation/power.saving.mode.js");
+const bodyParser = require('body-parser');
 
 
 dotenv.config();
@@ -32,6 +34,11 @@ setTimeout(() => {
   }
 }, 2000);
 
+app.post('/api/payment/webhook',
+  bodyParser.raw({ type: 'application/json' }),
+  require('./src/controller/payment.controller.js').handleStripeWebhook
+);
+
 // Routes
 app.use('/api', authRouter);
 app.use('/api/users', userRouter);
@@ -41,6 +48,7 @@ app.use("/api/device", deviceRouter);
 app.use("/api/category", categoryRouter);
 app.use("/api/sensor", sensorRouter);
 app.use("/api/automation", automationRouter);
+app.use("/api/payment", paymentRoute);
 
 
 app.use((req, res, next) => {
