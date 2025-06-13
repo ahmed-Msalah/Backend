@@ -94,12 +94,12 @@ client.on('message', async (topic, message) => {
     if (topic === 'triger/movement') {
       const trigerData = JSON.parse(message.toString());
       console.log("trigerData", trigerData)
-      await Device.updateOne({ pinNumber: trigerData.pinNumber }, { status: 'ON' });
+      await Device.updateOne({ pinNumber: trigerData.pin }, { status: 'ON' });
     }
 
     if (topic === 'triger/noMovement') {
       const trigerData = JSON.parse(message.toString());
-      await Device.updateOne({ pinNumber: trigerData.pinNumber }, { status: 'OFF' });
+      await Device.updateOne({ pinNumber: trigerData.pin }, { status: 'OFF' });
     }
   } catch (error) {
     console.error('Error storing data:', error);
