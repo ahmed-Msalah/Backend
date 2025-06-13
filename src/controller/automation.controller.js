@@ -86,7 +86,7 @@ const deleteAutomation = async (req, res) => {
       });
     }
 
-    await automation.remove();
+    await automation.deleteOne();
 
     res.status(200).json({
       message: 'Automation deleted successfully',
