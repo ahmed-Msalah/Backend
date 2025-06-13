@@ -30,6 +30,8 @@ client.on('close', () => {
 
 client.on('message', async (topic, message) => {
   try {
+    console.log("message", message);
+    console.log("topic", topic);
     if (topic === 'sensor/reading') {
       console.log('topic', message);
       const parsedMessage = JSON.parse(message.toString());
@@ -91,6 +93,7 @@ client.on('message', async (topic, message) => {
 
     if (topic === 'triger/movement') {
       const trigerData = JSON.parse(message.toString());
+      console.log("trigerData", trigerData)
       await Device.updateOne({ _id: trigerData.deviceId }, { status: 'ON' });
     }
 
