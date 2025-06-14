@@ -30,12 +30,13 @@ client.on('close', () => {
 
 client.on('message', async (topic, message) => {
   try {
-    console.log("message", message);
-    console.log("topic", topic);
+   
     if (topic === 'sensor/reading') {
-      console.log('topic', message);
+      
       const parsedMessage = JSON.parse(message.toString());
-      const { pinNumber, userId, usage } = parsedMessage;
+      console.log('parsedMessage', parsedMessage);
+
+      const { pinNumber, email, usage } = parsedMessage;
 
       if (!pinNumber || isNaN(usage)) {
         console.error('Invalid data received:', parsedMessage);
@@ -94,12 +95,12 @@ client.on('message', async (topic, message) => {
     if (topic === 'triger/movement') {
       const trigerData = JSON.parse(message.toString());
       console.log("trigerData", trigerData)
-      await Device.updateOne({ _id: trigerData.deviceId }, { status: 'ON' });
+      await Device.updateOne({ pinNumber: trigerData.pin }, { status: 'ON' });
     }
 
     if (topic === 'triger/noMovement') {
       const trigerData = JSON.parse(message.toString());
-      await Device.updateOne({ _id: trigerData.deviceId }, { status: 'OFF' });
+      await Device.updateOne({ pinNumber: trigerData.pin }, { status: 'OFF' });
     }
   } catch (error) {
     console.error('Error storing data:', error);
