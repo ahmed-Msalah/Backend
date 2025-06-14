@@ -15,7 +15,7 @@ const TriggerSchema = new Schema({
     },
   },
   value: {
-    type: Schema.Types.Mixed,
+    type: Number,
     required: true,
   }
 }, { _id: false });
@@ -48,7 +48,7 @@ const ActionSchema = new Schema({
     },
     state: {
       type: String,
-      enum: ['turn_on', 'turn_off'],
+      enum: ['ON', 'OFF'],
       required: function () {
         return this.type === 'DEVICE';
       },
@@ -66,12 +66,34 @@ const ConditionSchema = new Schema({
   deviceId: {
     type: Schema.Types.ObjectId,
     ref: 'Device',
-    required: true,
+    required: function () {
+      return this.type === 'DEVICE'
+    }
   },
-  state: {
-    type: Schema.Types.Mixed,
-    required: true,
+  deviceState: {
+    type: String,
+    enum: ["ON", "OFF"],
+    required: function () {
+      return this.type === 'DEVICE'
+    }
+
+  },
+  sensorId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Sensor',
+    required: function () {
+      return this.type === 'SENSOR'
+    }
+  },
+  sensorValue: {
+    type: Number,
+    required: function () {
+      return this.type === 'SENSOR'
+    }
+
   }
+
+
 }, { _id: false });
 
 const AutomationSchema = new Schema({
