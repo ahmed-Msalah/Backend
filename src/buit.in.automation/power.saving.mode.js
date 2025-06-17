@@ -3,8 +3,24 @@ const PowerSavingMode = require("../models/power.saving.mode.model");
 const Room = require("../models/room.model");
 const Device = require("../models/device.model");
 const PowerUsage = require("../models/power.usage.model");
+const sendNotification = require("../service/send.notification");
+const Automation = require("../models/automation.model");
+const Sensor = require("../models/sensor.model");
+const User = require("../models/user.model");
 
 
+const evaluateConditions = async (conditions = []) => {
+  for (const condition of conditions) {
+    if (condition.type === "DEVICE") {
+      const device = await Device.findById(condition.deviceId);
+      if (!device || device.state !== condition.deviceState) return false;
+    } else if (condition.type === "SENSOR") {
+      const sensor = await Sensor.findById(condition.sensorId);
+      if (!sensor || sensor.value < condition.sensorValue) return false;
+    }
+  }
+  return true;
+}
 
 cron.schedule("*/15 * * * *", async () => {
   try {
@@ -48,6 +64,53 @@ cron.schedule("*/15 * * * *", async () => {
     }
 
     console.log(" Power saving cron job completed.");
+  } catch (error) {
+    console.error("Cron job failed:", error.message);
+  }
+})
+
+cron.schedule("0,30 * * * *", async () => {
+  try {
+    console.log("Running automations every 30 minutes...");
+
+    const automations = await Automation.find({}).lean();
+
+    for (const automation of automations) {
+      const { triggers, conditions, actions, userId } = automation;
+
+      for (const trigger of triggers) {
+        if (trigger.type === "SCHEDULE") {
+          const now = new Date();
+          const currentTime = now.getHours() + now.getMinutes() / 60;
+          if (Math.abs(currentTime - trigger.value) > 0.1) continue;
+        }
+
+        if (trigger.type === "SENSOR") {
+          const sensor = await Sensor.findById(trigger.sensorId);
+          if (!sensor || sensor.value < trigger.value) continue;
+        }
+
+        const conditionsValid = await evaluateConditions(conditions);
+        if (!conditionsValid) continue;
+
+        for (const action of actions) {
+          if (action.type === "DEVICE") {
+            await Device.findByIdAndUpdate(action.data.deviceId, {
+              state: action.data.state
+            });
+          } else if (action.type === "NOTIFICATION") {
+            const user = await User.findById(userId);
+            if (user?.deviceToken) {
+              await sendNotification({
+                deviceToken: user.deviceToken,
+                title: action.data.title,
+                message: action.data.message
+              });
+            }
+          }
+        }
+      }
+    }
   } catch (error) {
     console.error("Cron job failed:", error.message);
   }
