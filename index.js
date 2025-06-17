@@ -29,6 +29,21 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const aiClient = appInsights.defaultClient;
+
+app.use((req, res, next) => {
+  aiClient.trackTrace({
+    message: 'Incoming Request',
+    properties: {
+      method: req.method,
+      url: req.originalUrl,
+      headers: JSON.stringify(req.headers),
+      query: JSON.stringify(req.query),
+      body: JSON.stringify(req.body),
+    },
+  });
+  next();
+});
 
 // MQTT
 setTimeout(() => {
