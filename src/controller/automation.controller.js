@@ -4,6 +4,7 @@ const Room = require('../models/room.model');
 const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const sendNotification = require('../service/send.notification');
+const { saveNotificationInDatabase } = require('./notification.controller'); // إضافة لتخزين الإشعار
 
 const TrigerType = {
   SENSOR: 'SENSOR',
@@ -17,7 +18,7 @@ const ConditionType = {
 
 const ActionType = {
   NOTIFICATION: 'NOTIFICATION',
-  SENSOR: 'DEVICE',
+  DEVICE: 'DEVICE', // التصحيح هنا
 };
 
 const addAutomation = async (req, res) => {
@@ -227,6 +228,8 @@ const executeActions = async (actions, userId) => {
         title,
         message,
       });
+
+      await saveNotificationInDatabase(user._id, title, message);
     } else if (action.type === 'DEVICE') {
       const { deviceId, state } = action.data;
       const device = await Device.findById(deviceId);
