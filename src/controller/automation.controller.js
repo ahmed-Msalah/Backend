@@ -4,6 +4,7 @@ const Room = require('../models/room.model');
 const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const sendNotification = require('../service/send.notification');
+const { saveNotificationInDatabase } = require('./notification.controller'); // إضافة لتخزين الإشعار
 
 const TrigerType = {
   SENSOR: 'SENSOR',
@@ -17,7 +18,7 @@ const ConditionType = {
 
 const ActionType = {
   NOTIFICATION: 'NOTIFICATION',
-  SENSOR: 'DEVICE',
+  DEVICE: 'DEVICE', // التصحيح هنا
 };
 
 const addAutomation = async (req, res) => {
@@ -31,14 +32,13 @@ const addAutomation = async (req, res) => {
       errors.push('Name is required and must be a string.');
     }
 
-    errors.push(...await validateTriggers(triggers));
-    errors.push(...await validateActions(actions));
-    errors.push(...await validateConditions(conditions));
+    errors.push(...(await validateTriggers(triggers)));
+    errors.push(...(await validateActions(actions)));
+    errors.push(...(await validateConditions(conditions)));
 
     if (errors.length > 0) {
       return res.status(400).json({ success: false, errors });
     }
-
 
     const newAutomation = new Automation({
       userId,
@@ -48,7 +48,7 @@ const addAutomation = async (req, res) => {
       name,
     });
 
-    console.log("newAutomation", newAutomation)
+    console.log('newAutomation', newAutomation);
 
     const saved = await newAutomation.save();
     res.status(201).json({ message: 'Automation created successfully', automation: saved });
@@ -192,7 +192,7 @@ const fetchAutomation = async (automationId, userId) => {
   const automation = await Automation.findOne({ _id: automationId, userId });
   if (!automation) throw new Error('NOT_FOUND');
   return automation;
-}
+};
 
 const checkConditions = async (conditions = []) => {
   for (const condition of conditions) {
@@ -208,26 +208,28 @@ const checkConditions = async (conditions = []) => {
       }
     }
   }
-}
+};
 
 const executeActions = async (actions, userId) => {
   for (const action of actions) {
     if (action.type === 'NOTIFICATION') {
       const { title, message } = action.data;
       if (!title || !message) throw new Error('INVALID_NOTIFICATION_DATA');
-    
+
       const user = await User.findById(userId);
 
       if (!user || !user.deviceToken) {
-        console.error("User not found or device token missing");
+        console.error('User not found or device token missing');
         return;
       }
-      
+
       await sendNotification({
         deviceToken: user.deviceToken,
         title,
-        message
+        message,
       });
+
+      await saveNotificationInDatabase(user._id, title, message);
     } else if (action.type === 'DEVICE') {
       const { deviceId, state } = action.data;
       const device = await Device.findById(deviceId);
@@ -237,9 +239,9 @@ const executeActions = async (actions, userId) => {
       await device.save();
     }
   }
-}
+};
 
-const validateTriggers = async (triggers) => {
+const validateTriggers = async triggers => {
   const errors = [];
   if (!Array.isArray(triggers)) return errors;
 
@@ -263,9 +265,8 @@ const validateTriggers = async (triggers) => {
   });
 
   return errors;
-}
-const validateActions = async (actions) => {
-
+};
+const validateActions = async actions => {
   const errors = [];
   if (!Array.isArray(actions)) return errors;
 
@@ -292,8 +293,8 @@ const validateActions = async (actions) => {
   });
 
   return errors;
-}
-const validateConditions = async (conditions) => {
+};
+const validateConditions = async conditions => {
   const errors = [];
   if (!Array.isArray(conditions)) return errors;
 
@@ -322,6 +323,6 @@ const validateConditions = async (conditions) => {
   });
 
   return errors;
-}
+};
 
 module.exports = { addAutomation, getUserAutomations, deleteAutomation, updateAutomation, applyAutomation };
