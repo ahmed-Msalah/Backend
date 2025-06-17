@@ -2,8 +2,7 @@ const User = require('../models/user.model.js');
 const bcrypt = require('bcrypt');
 const { sendVerificationEmail, resendVerificationEmail, sendResetCodeEmail } = require('../service/email.service.js');
 const { generateToken } = require('../service/generateToken.service.js');
-const PowerSavingMode =  require('../models/power.saving.mode.model.js')
-
+const PowerSavingMode = require('../models/power.saving.mode.model.js');
 
 const createAccount = async (req, res) => {
   try {
@@ -17,7 +16,6 @@ const createAccount = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ message: 'Email already in use' });
     }
-
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -36,7 +34,20 @@ const createAccount = async (req, res) => {
 
     const createdUser = await newUser.save();
 
-    await sendVerificationEmail(email, username, verificationCode);
+    await PowerSavingMode.insertMany([
+      { userId: createdUser._id, usage: 100, mode: 'POWERSAVING' },
+      { userId: createdUser._id, usage: 150, mode: 'ULTRAPOWERSAVING' },
+      { userId: createdUser._id, usage: 200, mode: 'EMERGENCY' },
+    ]);
+
+    try {
+      await sendVerificationEmail(email, username, verificationCode);
+    } catch (emailError) {
+      return res.status(201).json({
+        message: 'Account created, but failed to send verification email. Please try resending the code.',
+        data: { id: createdUser.id },
+      });
+    }
 
     const token = generateToken(createdUser);
 
@@ -49,7 +60,6 @@ const createAccount = async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
-
 const verifyEmail = async (req, res) => {
   try {
     const { id, code } = req.body;
@@ -82,25 +92,6 @@ const verifyEmail = async (req, res) => {
     user.verificationCode = undefined;
     user.verificationCodeExpires = undefined;
     await user.save();
-
-    await PowerSavingMode.insertMany([
-      {
-        userId: createdUser._id,
-        usage: 100,
-        mode: "POWERSAVING",
-      },
-      {
-        userId: createdUser._id,
-        usage: 150,
-        mode: "ULTRAPOWERSAVING",
-      },
-      {
-        userId: createdUser._id,
-        usage: 200,
-        mode: "EMERGENCY",
-      },
-    ]);
-    
 
     res.status(200).json({ message: 'Account has been successfully verified!' });
   } catch (error) {

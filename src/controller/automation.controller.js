@@ -1,7 +1,7 @@
 const Automation = require('../models/automation.model');
 const Device = require('../models/device.model');
 const Room = require('../models/room.model');
-
+const { sendNotification } = require('../service/send.notification');
 const TrigerType = {
   SENSOR: 'SENSOR',
   SCHEDULE: 'SCHEDULE',
@@ -133,8 +133,6 @@ const updateAutomation = async (req, res) => {
   }
 };
 
-module.exports = { addAutomation, getUserAutomations, deleteAutomation, updateAutomation };
-
 const applyAutomation = async (req, res) => {
   try {
     const { automationId } = req.params;
@@ -198,7 +196,7 @@ async function executeActions(actions, userId) {
       const { title, message } = action.data;
       if (!title || !message) throw new Error('INVALID_NOTIFICATION_DATA');
 
-      await NotificationService.send({ userId, title, message });
+      await sendNotification.send({ userId, title, message });
     } else if (action.type === 'DEVICE') {
       const { deviceId, state } = action.data;
       const device = await Device.findById(deviceId);

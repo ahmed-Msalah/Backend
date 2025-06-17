@@ -6,7 +6,7 @@ const { getUserRecomndations } = require('../service/GeminiApiService.js');
 const Room = require('../models/room.model.js');
 const Device = require('../models/device.model.js');
 const Automation = require('../models/automation.model.js');
-
+const Sensor = require('../models/sensor.model.js');
 const getAllUsers = async (req, res) => {
   try {
     const { user } = req;
@@ -131,18 +131,15 @@ const getRecommendations = async (req, res) => {
   try {
     const userId = req.user.id;
     const { lang } = req.query || 'english';
-    // جلب الغرف الخاصة بالمستخدم
+
     const rooms = await Room.find({ userId }).select('_id');
     const roomIds = rooms.map(room => room._id);
 
-    // جلب الأجهزة داخل هذه الغرف
     const devices = await Device.find({ roomId: { $in: roomIds } });
     const deviceIds = devices.map(device => device._id);
     const deviceIdAndName = devices.map(dev => ({ id: dev._id, name: dev.name }));
-    // تحديد بداية الشهر الحالي باستخدام moment
     const startOfMonth = moment().startOf('month').toDate();
 
-    // جلب بيانات الاستهلاك من بداية الشهر الحالي فقط
     const usageData = await PowerUsage.find({
       deviceId: { $in: deviceIds },
       createdAt: { $gte: startOfMonth },
@@ -152,14 +149,12 @@ const getRecommendations = async (req, res) => {
       return res.status(404).json({ message: 'No usage data available for current month.' });
     }
 
-    // تصفية البيانات المرسلة للنموذج (لو مطلوب)
     const filteredUsageData = usageData.map(u => ({
       time: u.createdAt,
       deviceId: u.deviceId.toString(),
       usage: u.usage,
     }));
 
-    // استدعاء دالة التوصيات وتمرير البيانات المصفاة
     const recommendations = await getUserRecomndations(filteredUsageData, deviceIdAndName, lang);
 
     res.json({ recommendations });
@@ -173,11 +168,9 @@ const calculateAverageCost = async (req, res) => {
     const ELECTRICITY_TARIFF = 0.75;
     const userId = req.user.id;
 
-    // Get all rooms for the user
     const rooms = await Room.find({ userId }).select('_id');
     const roomIds = rooms.map(room => room._id);
 
-    // Get all running devices
     const devices = await Device.find({
       roomId: { $in: roomIds },
     }).select('_id name');
