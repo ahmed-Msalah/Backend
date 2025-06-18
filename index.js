@@ -29,7 +29,6 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// بعد express.json() و express.urlencoded()
 const aiClient = require('applicationinsights').defaultClient;
 
 app.use((req, res, next) => {

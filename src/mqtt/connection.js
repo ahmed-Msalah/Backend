@@ -38,7 +38,7 @@ client.on('message', async (topic, message) => {
       const parsedMessage = JSON.parse(message.toString());
       console.log('parsedMessage', parsedMessage);
 
-      const { pinNumber, email, usage } = parsedMessage;
+      const { pin, email, usage } = parsedMessage;
 
       if (!pinNumber || isNaN(usage)) {
         console.error('Invalid data received:', parsedMessage);
@@ -47,7 +47,7 @@ client.on('message', async (topic, message) => {
 
       const user = await User.findOne({ email });
 
-      const sensor = await Sensor.findOne({ pinNumber, userId: user._id });
+      const sensor = await Sensor.findOne({ pinNumber: pin, userId: user._id });
       const devices = await Device.find({ roomId: sensor.roomId });
 
       if (!devices.length) {
@@ -72,17 +72,6 @@ client.on('message', async (topic, message) => {
       const aiResult = JSON.parse(aiResponseText);
 
       await PowerUsage.insertMany(aiResult.map(d => ({ deviceId: d.deviceId, usage: d.usage })));
-    }
-
-    if (topic === 'device/on') {
-      const deviceData = JSON.parse(message.toString());
-
-      const room = await Room.findOne({ userId: deviceData.userId });
-      const existingDevice = await Device.findOne({ pinNumber: deviceData.pinNumber, roomId: room._id });
-
-      if (existingDevice) {
-        await Device.updateOne({ _id: existingDevice._id }, { status: 'ON' });
-      }
     }
 
     if (topic === 'triger/movement') {
