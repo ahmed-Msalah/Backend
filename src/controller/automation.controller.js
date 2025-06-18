@@ -4,7 +4,7 @@ const Room = require('../models/room.model');
 const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const sendNotification = require('../service/send.notification');
-const { saveNotificationInDatabase } = require('./notification.controller'); // إضافة لتخزين الإشعار
+const { saveNotificationInDatabase } = require('./notification.controller');
 
 const TrigerType = {
   SENSOR: 'SENSOR',
@@ -18,14 +18,13 @@ const ConditionType = {
 
 const ActionType = {
   NOTIFICATION: 'NOTIFICATION',
-  DEVICE: 'DEVICE', // التصحيح هنا
+  DEVICE: 'DEVICE',
 };
 
 const addAutomation = async (req, res) => {
   try {
     const { triggers, conditions, actions, name } = req.body;
     const userId = req.user.id;
-
     const errors = [];
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
@@ -40,16 +39,7 @@ const addAutomation = async (req, res) => {
       return res.status(400).json({ success: false, errors });
     }
 
-    const newAutomation = new Automation({
-      userId,
-      triggers,
-      actions,
-      conditions,
-      name,
-    });
-
-    console.log('newAutomation', newAutomation);
-
+    const newAutomation = new Automation({ userId, triggers, actions, conditions, name });
     const saved = await newAutomation.save();
     res.status(201).json({ message: 'Automation created successfully', automation: saved });
   } catch (error) {
@@ -60,36 +50,19 @@ const addAutomation = async (req, res) => {
 const getUserAutomations = async (req, res) => {
   try {
     const userId = req.user.id;
-
     const automations = await Automation.find({ userId })
-      .populate({
-        path: 'triggers.sensorId',
-        select: 'type sensorId value',
-      })
-      .populate({
-        path: 'actions.data.deviceId',
-        select: 'type data',
-      })
-      .populate({
-        path: 'conditions.deviceId',
-        select: 'type sensorId state',
-      })
+      .populate({ path: 'triggers.sensorId', select: 'type sensorId value' })
+      .populate({ path: 'actions.data.deviceId', select: 'type data' })
+      .populate({ path: 'conditions.deviceId', select: 'type sensorId state' })
       .exec();
 
     if (!automations || automations.length === 0) {
-      return res.status(404).json({
-        message: 'No automations found for this user',
-      });
+      return res.status(404).json({ message: 'No automations found for this user' });
     }
 
-    res.status(200).json({
-      automations,
-    });
+    res.status(200).json({ automations });
   } catch (error) {
-    res.status(500).json({
-      message: 'Error fetching user automations',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Error fetching user automations', error: error.message });
   }
 };
 
@@ -97,59 +70,36 @@ const deleteAutomation = async (req, res) => {
   try {
     const { automationId } = req.params;
     const userId = req.user.id;
-
-    const automation = await Automation.findOne({ _id: automationId, userId: userId });
+    const automation = await Automation.findOne({ _id: automationId, userId });
 
     if (!automation) {
-      return res.status(404).json({
-        message: 'Automation not found or you do not have permission to delete it',
-      });
+      return res.status(404).json({ message: 'Automation not found or you do not have permission to delete it' });
     }
 
     await automation.deleteOne();
-
-    res.status(200).json({
-      message: 'Automation deleted successfully',
-    });
+    res.status(200).json({ message: 'Automation deleted successfully' });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: 'Error deleting automation',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Error deleting automation', error: error.message });
   }
 };
 
 const updateAutomation = async (req, res) => {
   try {
     const { automationId } = req.params;
-
     const userId = req.user.id;
-
-    const automation = await Automation.findOne({ _id: automationId, userId: userId });
+    const automation = await Automation.findOne({ _id: automationId, userId });
 
     if (!automation) {
-      return res.status(404).json({
-        message: 'Automation not found or you do not have permission to update it',
-      });
+      return res.status(404).json({ message: 'Automation not found or you do not have permission to update it' });
     }
 
     const updatedData = req.body;
-
     Object.assign(automation, updatedData);
-
     const updatedAutomation = await automation.save();
 
-    res.status(200).json({
-      message: 'Automation updated successfully',
-      automation: updatedAutomation,
-    });
+    res.status(200).json({ message: 'Automation updated successfully', automation: updatedAutomation });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: 'Error updating automation',
-      error: error.message,
-    });
+    res.status(500).json({ message: 'Error updating automation', error: error.message });
   }
 };
 
@@ -157,33 +107,25 @@ const applyAutomation = async (req, res) => {
   try {
     const { automationId } = req.params;
     const userId = req.user.id;
-
     const automation = await fetchAutomation(automationId, userId);
 
     await checkConditions(automation.conditions);
-
     await executeActions(automation.actions, userId);
 
     return res.status(200).json({ message: 'Automation applied successfully' });
   } catch (error) {
-    console.error(error);
-
     if (error.message === 'NOT_FOUND') {
       return res.status(404).json({ message: 'Automation not found or unauthorized' });
     }
-
     if (error.message === 'CONDITION_NOT_MET') {
       return res.status(400).json({ message: 'Conditions were not met' });
     }
-
     if (error.message === 'INVALID_NOTIFICATION_DATA') {
       return res.status(400).json({ message: 'Notification data is missing' });
     }
-
     if (error.message === 'DEVICE_NOT_FOUND') {
       return res.status(404).json({ message: 'Device in action not found' });
     }
-
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -217,24 +159,14 @@ const executeActions = async (actions, userId) => {
       if (!title || !message) throw new Error('INVALID_NOTIFICATION_DATA');
 
       const user = await User.findById(userId);
+      if (!user || !user.deviceToken) return;
 
-      if (!user || !user.deviceToken) {
-        console.error('User not found or device token missing');
-        return;
-      }
-
-      await sendNotification({
-        deviceToken: user.deviceToken,
-        title,
-        message,
-      });
-
+      await sendNotification({ deviceToken: user.deviceToken, title, message });
       await saveNotificationInDatabase(user._id, title, message);
     } else if (action.type === 'DEVICE') {
       const { deviceId, state } = action.data;
       const device = await Device.findById(deviceId);
       if (!device) throw new Error('DEVICE_NOT_FOUND');
-
       device.state = state;
       await device.save();
     }
@@ -243,7 +175,10 @@ const executeActions = async (actions, userId) => {
 
 const validateTriggers = async triggers => {
   const errors = [];
-  if (!Array.isArray(triggers)) return errors;
+  if (!Array.isArray(triggers)) {
+    errors.push('Triggers must be an array.');
+    return errors;
+  }
 
   triggers.forEach((trigger, index) => {
     if (!trigger.type || !['SENSOR', 'SCHEDULE'].includes(trigger.type)) {
@@ -266,9 +201,13 @@ const validateTriggers = async triggers => {
 
   return errors;
 };
+
 const validateActions = async actions => {
   const errors = [];
-  if (!Array.isArray(actions)) return errors;
+  if (!Array.isArray(actions)) {
+    errors.push('Actions must be an array.');
+    return errors;
+  }
 
   actions.forEach((action, index) => {
     if (!action.type || !['NOTIFICATION', 'DEVICE'].includes(action.type)) {
@@ -294,9 +233,13 @@ const validateActions = async actions => {
 
   return errors;
 };
+
 const validateConditions = async conditions => {
   const errors = [];
-  if (!Array.isArray(conditions)) return errors;
+  if (!Array.isArray(conditions)) {
+    errors.push('Conditions must be an array.');
+    return errors;
+  }
 
   conditions.forEach((condition, index) => {
     if (!condition.type || !['DEVICE', 'SENSOR'].includes(condition.type)) {
@@ -325,4 +268,10 @@ const validateConditions = async conditions => {
   return errors;
 };
 
-module.exports = { addAutomation, getUserAutomations, deleteAutomation, updateAutomation, applyAutomation };
+module.exports = {
+  addAutomation,
+  getUserAutomations,
+  deleteAutomation,
+  updateAutomation,
+  applyAutomation,
+};
