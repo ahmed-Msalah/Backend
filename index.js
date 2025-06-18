@@ -1,9 +1,3 @@
-const appInsights = require('applicationinsights');
-appInsights
-  .setup(
-    'InstrumentationKey=62bb47fe-3931-45b6-af57-c2adca117833;IngestionEndpoint=https://uaenorth-0.in.applicationinsights.azure.com/;LiveEndpoint=https://uaenorth.livediagnostics.monitor.azure.com/;ApplicationId=5578d9fe-bdc6-4123-b772-a6ab26821765',
-  )
-  .start();
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
@@ -29,50 +23,6 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const aiClient = require('applicationinsights').defaultClient;
-
-app.use((req, res, next) => {
-  const startTime = Date.now();
-
-  res.on('finish', () => {
-    const durationMs = Date.now() - startTime;
-
-    aiClient.trackTrace({
-      message: 'Handled Request',
-      properties: {
-        method: req.method,
-        url: req.originalUrl,
-        statusCode: res.statusCode,
-        success: res.statusCode < 400,
-        durationMs: durationMs,
-        headers: JSON.stringify(req.headers),
-        query: JSON.stringify(req.query),
-        body: JSON.stringify(req.body),
-      },
-    });
-  });
-
-  next();
-});
-
-// بعد كل الراوتات
-app.use((err, req, res, next) => {
-  aiClient.trackException({
-    exception: err,
-    properties: {
-      method: req.method,
-      url: req.originalUrl,
-      headers: JSON.stringify(req.headers),
-      query: JSON.stringify(req.query),
-      body: JSON.stringify(req.body),
-      statusCode: res.statusCode || 500,
-    },
-  });
-
-  console.error('❌ Unhandled Error:', err);
-
-  res.status(500).json({ message: 'Internal Server Error' });
-});
 
 // MQTT
 setTimeout(() => {

@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - Tarsheed
+name: Build and deploy Node.js app to Azure Web App - tarsheed
 
 on:
   push:
@@ -60,15 +60,15 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_9022B8C7775745DB951F8E6DD61849AD }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_CF6E8C8A576349118A7364CD4DB9CD26 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_420973ECE5BB482BBD20E08CCAE806D9 }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_7BE6413C9EBF4A54AA23AF5628F06E45 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F07F0A77894748EDB5C43FE4387462EA }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_FA4CC5AFD14E4E34B9EBADE23B0D9F3D }}
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'Tarsheed'
+          app-name: 'tarsheed'
           slot-name: 'Production'
           package: .
           
