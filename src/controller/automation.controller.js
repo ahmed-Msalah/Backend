@@ -258,8 +258,8 @@ const validateTriggers = async triggers => {
       }
     }
     if (trigger.type === 'SCHEDULE') {
-      if (typeof trigger.value !== 'number') {
-        errors.push(`Trigger[${index}].value must be a number for schedule.`);
+      if (typeof trigger.time !== 'string') {
+        errors.push(`Trigger[${index}].time must be a string for schedule.`);
       }
     }
   });

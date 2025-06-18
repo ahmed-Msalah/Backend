@@ -30,8 +30,9 @@ const paymentSchema = new mongoose.Schema(
     paymentMethod: {
       type: String, 
     },
-    billingPeriod: {
-      type: String,
+    createdAt: {
+      type: Date,
+      default: Date.now,
     },
   },
   {

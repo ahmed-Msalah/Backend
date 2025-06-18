@@ -82,7 +82,12 @@ cron.schedule("0,30 * * * *", async () => {
         if (trigger.type === "SCHEDULE") {
           const now = new Date();
           const currentTime = now.getHours() + now.getMinutes() / 60;
-          if (Math.abs(currentTime - trigger.value) > 0.1) continue;
+        
+          const [hoursStr, minutesStr] = trigger.time.split(":");
+          const triggerTime = parseInt(hoursStr) + parseInt(minutesStr) / 60;
+        
+          if (Math.abs(currentTime - triggerTime) > 0.1) continue;
+        
         }
 
         if (trigger.type === "SENSOR") {

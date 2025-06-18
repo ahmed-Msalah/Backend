@@ -18,6 +18,10 @@ const SensorSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    value: {
+      type: Number,
+      required: false,
+    },
     roomId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Room',

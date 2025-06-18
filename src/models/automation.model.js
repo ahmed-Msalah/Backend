@@ -15,9 +15,17 @@ const TriggerSchema = new Schema({
     },
   },
   value: {
-    type: Number,
-    required: true,
-  }
+    type: String,
+    required: function () {
+      return this.type === 'SENSOR';
+    },
+  },
+  time: {
+    type: String,
+    required: function () {
+      return this.type === 'SCHEDULE';
+    },
+  },
 }, { _id: false });
 
 const ActionSchema = new Schema({

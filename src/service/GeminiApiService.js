@@ -36,7 +36,7 @@ Output format:
     const response = await result.response;
     const text = await response.text();
 
-    console.log('📥 Gemini raw response:\n', text);
+    console.log(' Gemini raw response:\n', text);
 
     const cleanText = text
       .replace(/```json/g, '')
@@ -65,7 +65,7 @@ const getGeminiResponse = async prompt => {
     const text = await response.text();
     return text.trim();
   } catch (error) {
-    console.error('❌ Gemini API Error:', error);
+    console.error(' Gemini API Error:', error);
     throw new Error('Failed to get response from Gemini');
   }
 };
