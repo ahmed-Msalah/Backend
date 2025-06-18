@@ -1,7 +1,7 @@
 const appInsights = require('applicationinsights');
 appInsights
   .setup(
-    'InstrumentationKey=62bb47fe-3931-45b6-af57-c2adca117833;IngestionEndpoint=https://uaenorth-0.in.applicationinsights.azure.com/;LiveEndpoint=https://uaenorth.livediagnostics.monitor.azure.com/;ApplicationId=5578d9fe-bdc6-4123-b772-a6ab26821765',
+    'InstrumentationKey=e5ef3799-6b83-45ee-a6aa-4739485cde42;IngestionEndpoint=https://uaenorth-0.in.applicationinsights.azure.com/;LiveEndpoint=https://uaenorth.livediagnostics.monitor.azure.com/;ApplicationId=f7edfb73-ef91-47d8-9f62-01e4381e6c07',
   )
   .start();
 const express = require('express');
