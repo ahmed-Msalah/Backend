@@ -15,6 +15,10 @@ const TriggerSchema = new Schema(
         return this.type === 'SENSOR';
       },
     },
+    operator: {
+      type: String,
+      required: true,
+    },
     value: {
       type: Number,
       required: function () {
@@ -104,6 +108,10 @@ const ConditionSchema = new Schema(
         return this.type === 'SENSOR';
       },
     },
+    operator: {
+      type: String,
+      required: true,
+    },
   },
   { _id: false },
 );
@@ -129,6 +137,10 @@ const AutomationSchema = new Schema({
   conditions: {
     type: [ConditionSchema],
     required: false,
+  },
+  status: {
+     type: Boolean,
+     default: false
   },
   createdAt: {
     type: Date,

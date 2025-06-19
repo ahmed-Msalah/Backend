@@ -13,14 +13,28 @@ const evaluateConditions = async (conditions = []) => {
   for (const condition of conditions) {
     if (condition.type === "DEVICE") {
       const device = await Device.findById(condition.deviceId);
-      if (!device || device.state !== condition.deviceState) return false;
+      if (!device || device.status !== condition.deviceState) return false;
     } else if (condition.type === "SENSOR") {
       const sensor = await Sensor.findById(condition.sensorId);
-      if (!sensor || sensor.value < condition.sensorValue) return false;
+      if (!sensor || !applyOperator(sensor.value, condition.operator, condition.sensorValue)) return false;
+
     }
   }
   return true;
 }
+
+const applyOperator = (a, operator, b) => {
+  switch (operator) {
+    case '>': return a > b;
+    case '<': return a < b;
+    case '>=': return a >= b;
+    case '<=': return a <= b;
+    case '===': return a === b;
+    case '!==': return a !== b;
+    default:
+      throw new Error(`Unsupported operator: ${operator}`);
+  }
+};
 
 cron.schedule("*/15 * * * *", async () => {
   try {
@@ -69,7 +83,7 @@ cron.schedule("*/15 * * * *", async () => {
   }
 })
 
-cron.schedule("0,30 * * * *", async () => {
+cron.schedule("* * * * *", async () => {
   try {
     console.log("Running automations every 30 minutes...");
 
@@ -81,18 +95,22 @@ cron.schedule("0,30 * * * *", async () => {
       for (const trigger of triggers) {
         if (trigger.type === "SCHEDULE") {
           const now = new Date();
-          const currentTime = now.getHours() + now.getMinutes() / 60;
-        
+          const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
           const [hoursStr, minutesStr] = trigger.time.split(":");
-          const triggerTime = parseInt(hoursStr) + parseInt(minutesStr) / 60;
-        
-          if (Math.abs(currentTime - triggerTime) > 0.1) continue;
-        
+          const triggerMinutes = parseInt(hoursStr) * 60 + parseInt(minutesStr);
+
+          if (!applyOperator(currentMinutes, trigger.operator, triggerMinutes)) {
+            continue;
+          }
+
         }
 
         if (trigger.type === "SENSOR") {
           const sensor = await Sensor.findById(trigger.sensorId);
-          if (!sensor || sensor.value < trigger.value) continue;
+          if (!sensor || !applyOperator(sensor.value, trigger.operator, trigger.value)) {
+            continue;
+          }
         }
 
         const conditionsValid = await evaluateConditions(conditions);
@@ -101,16 +119,20 @@ cron.schedule("0,30 * * * *", async () => {
         for (const action of actions) {
           if (action.type === "DEVICE") {
             await Device.findByIdAndUpdate(action.data.deviceId, {
-              state: action.data.state
+              status: action.data.state
             });
+            await Automation.updateOne({ _id: automation._id }, { status: true });
           } else if (action.type === "NOTIFICATION") {
             const user = await User.findById(userId);
+            console.log("user from notify", user)
             if (user?.deviceToken) {
               await sendNotification({
                 deviceToken: user.deviceToken,
                 title: action.data.title,
                 message: action.data.message
               });
+
+              await Automation.updateOne({ _id: automation._id }, { status: true });
             }
           }
         }

@@ -1,14 +1,13 @@
 const Automation = require('../models/automation.model');
 const Device = require('../models/device.model');
 const Room = require('../models/room.model');
+const Sensor = require('../models/sensor.model');
 const mongoose = require('mongoose');
 const User = require('../models/user.model');
 const sendNotification = require('../service/send.notification');
 const { saveNotificationInDatabase } = require('./notification.controller');
-const moment = require('moment-timezone');
 
-// لو عندك Sensor model أضف السطر دا
-// const Sensor = require('../models/sensor.model');
+
 
 const TrigerType = {
   SENSOR: 'SENSOR',
@@ -169,19 +168,17 @@ const checkConditions = async (conditions = []) => {
   for (const condition of conditions) {
     if (condition.type === 'DEVICE') {
       const device = await Device.findById(condition.deviceId);
-      if (!device || device.state !== condition.state) {
+      if (!device || device.status !== condition.deviceState) {
         throw new Error('CONDITION_NOT_MET');
       }
     } else if (condition.type === 'SENSOR') {
-      // تأكد من تعريف Sensor لو هتستخدمه
-      const sensor = await Sensor.findById(condition.deviceId);
-      if (!sensor || sensor.value !== condition.state) {
+      const sensor = await Sensor.findById(condition.sensorId);
+      if (!sensor || !applyOperator(sensor.value, condition.operator, condition.sensorValue)) {
         throw new Error('CONDITION_NOT_MET');
       }
     }
   }
 };
-
 const executeActions = async (actions, userId) => {
   for (const action of actions) {
     if (action.type === 'NOTIFICATION') {
@@ -298,10 +295,23 @@ const validateConditions = async conditions => {
   return errors;
 };
 
+const applyOperator = (a, operator, b) => {
+  switch (operator) {
+    case '>': return a > b;
+    case '<': return a < b;
+    case '>=': return a >= b;
+    case '<=': return a <= b;
+    case '===': return a === b;
+    case '!==': return a !== b;
+    default:
+      throw new Error(`Unsupported operator: ${operator}`);
+  }
+};
 module.exports = {
   addAutomation,
   getUserAutomations,
   deleteAutomation,
   updateAutomation,
   applyAutomation,
+  applyOperator
 };
