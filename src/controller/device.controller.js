@@ -179,11 +179,12 @@ const toggleDevice = async (req, res) => {
     if (device.status === 'OFF') {
       device.status = 'ON';
       const updatedDevice = await device.save();
-      client.on('message', (topic, message) => {
-        const pinNumber = device.pinNumber;
-        const payload = { status: 'ON', pins: [pinNumber] };
-        client.publish('device/led', payload);
-      });
+
+      const pinNumber = device.pinNumber;
+      const payload = JSON.stringify({ status: 'ON', pins: [pinNumber] });
+
+      client.publish('device/led', payload);
+
       console.log('Saved device:', updatedDevice);
       return res.status(200).json({ message: 'Device Status Updated Sucessfully' });
     }

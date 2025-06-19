@@ -122,12 +122,10 @@ const applyAutomation = async (req, res) => {
     const userId = req.user.id;
     const automation = await fetchAutomation(automationId, userId);
 
-    // تحقق من وجود SCHEDULE وتحقق من الوقت قبل تنفيذ الشروط والأكشنز
     const scheduleTrigger = automation.triggers.find(
       trigger => trigger.type === 'SCHEDULE' && typeof trigger.time === 'string',
     );
     if (scheduleTrigger) {
-      // استخدم توقيت القاهرة في المقارنة
       const nowInCairo = moment().tz('Africa/Cairo');
       const scheduleTime = moment.tz(scheduleTrigger.time, 'Africa/Cairo');
       if (nowInCairo.isBefore(scheduleTime)) {
