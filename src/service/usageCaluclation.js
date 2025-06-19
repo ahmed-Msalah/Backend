@@ -1,4 +1,4 @@
-exports.calculateBill = usage => {
+const calculateBill = (usage) => {
   let cost = 0;
 
   if (usage <= 50) {
@@ -14,13 +14,13 @@ exports.calculateBill = usage => {
   } else if (usage <= 1000) {
     cost = 50 * 0.58 + 50 * 0.68 + 100 * 0.77 + 150 * 1.06 + 300 * 1.28 + (usage - 650) * 1.4;
   } else {
-    cost = usage * 1.45;
+    cost = 50 * 0.58 + 50 * 0.68 + 100 * 0.77 + 150 * 1.06 + 300 * 1.28 + 350 * 1.4 + (usage - 1000) * 1.45;
   }
 
   return parseFloat(cost.toFixed(2));
-};
+}
 
-exports.getTier = usage => {
+const getTier = (usage) => {
   if (usage <= 50) return '1';
   if (usage <= 100) return '2';
   if (usage <= 200) return '3';
@@ -28,4 +28,6 @@ exports.getTier = usage => {
   if (usage <= 650) return '5';
   if (usage <= 1000) return '6';
   return '7';
-};
+}
+
+module.exports = { calculateBill, getTier };

@@ -4,40 +4,55 @@ const Payment = require('../models/payment.model');
 const User = require('../models/user.model');
 const sendNotification = require("../service/send.notification");
 const { saveNotificationInDatabase } = require('./notification.controller');
+const Room = require('../models/room.model');
+const Device = require('../models/device.model');
+const PowerUsage = require('../models/power.usage.model');
+const { calculateBill } = require('../service/usageCaluclation');
 
 
 const initPayament = async (req, res) => {
 
     try {
-        const { amount, userId } = req.body;
-        const convertAmount = amount * 100;
+        const { userId } = req.body;
+        console.log("userId", userId)
+        const usage = await getUserUsage(userId);
+        const amount = calculateBill(usage) * 100;
+        console.log("amount", amount)
 
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: convertAmount,
-            currency: 'egp',
-            automatic_payment_methods: { enabled: true },
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [{
+                price_data: {
+                    currency: 'egp',
+                    product_data: {
+                        name: 'Subscription',
+                    },
+                    unit_amount: amount,
+                },
+                quantity: 1,
+            }],
+            mode: 'payment',
+            success_url: `${process.env.DOMAIN}/api/payment/payment-success`,
+            cancel_url: `${process.env.DOMAIN}/api/payment/payment-failed`,
         });
-        console.log("paymentIntent", paymentIntent)
 
         const billingPeriod = getBillingPeriod();
 
         await Payment.create({
-            user: userId,
-            stripePaymentIntentId: paymentIntent.id,
+            userId: userId,
             amount,
             billingPeriod,
             status: 'processing',
         });
 
         return res.status(200).json({
-            clientSecret: paymentIntent.client_secret,
-        })
+            redirectUrl: session.url,
+        });
     }
     catch (error) {
         res.json({ message: error.message })
     }
 }
-
 
 
 const handleStripeWebhook = async (req, res) => {
@@ -142,8 +157,100 @@ const handleStripeWebhook = async (req, res) => {
     }
 };
 
+const sucessPageServe = async (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Success</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background-color: #f4f9f9;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              color: #333;
+            }
+            .container {
+              text-align: center;
+              background: #ffffff;
+              padding: 40px 60px;
+              border-radius: 12px;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+              color: #28a745;
+              font-size: 2.2rem;
+              margin-bottom: 20px;
+            }
+            p {
+              font-size: 1.1rem;
+            }
+            
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Payment Successful!</h1>
+            <p>Thank you for your payment. Your service is now active.</p>
+          </div>
+        </body>
+      </html>
+    `);
+};
 
-module.exports = { initPayament, handleStripeWebhook };
+const failedPageServe = async (req, res) => {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Failed</title>
+          <style>
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background-color: #fff4f4;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              height: 100vh;
+              color: #333;
+            }
+            .container {
+              text-align: center;
+              background: #ffffff;
+              padding: 40px 60px;
+              border-radius: 12px;
+              box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            }
+            h1 {
+              color: #dc3545;
+              font-size: 2.2rem;
+              margin-bottom: 20px;
+            }
+            p {
+              font-size: 1.1rem;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1> Payment Failed or Canceled</h1>
+            <p>Please try again or contact support if the issue persists.</p>
+          </div>
+        </body>
+      </html>
+    `);
+};
+
+
+
+module.exports = { initPayament, handleStripeWebhook, sucessPageServe, failedPageServe };
 
 
 const getBillingPeriod = () => {
@@ -151,4 +258,32 @@ const getBillingPeriod = () => {
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     return `${year}-${month}`;
+};
+
+const getUserUsage = async (userId) => {
+    try {
+
+        const rooms = await Room.find({ userId }, '_id');
+        const roomIds = rooms.map(room => room._id);
+
+        const devices = await Device.find({ roomId: { $in: roomIds } }, '_id');
+        const deviceIds = devices.map(device => device._id);
+
+        const result = await PowerUsage.aggregate([
+            { $match: { deviceId: { $in: deviceIds } } },
+            {
+                $group: {
+                    _id: null,
+                    totalUsage: { $sum: '$usage' },
+                },
+            },
+        ]);
+
+        const totalUsage = result.length > 0 ? result[0].totalUsage : 0;
+
+        return totalUsage;
+    } catch (err) {
+        console.error('Error getting user usage:', err);
+        throw err;
+    }
 };

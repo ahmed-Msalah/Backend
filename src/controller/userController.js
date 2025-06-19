@@ -7,6 +7,8 @@ const Room = require('../models/room.model.js');
 const Device = require('../models/device.model.js');
 const Automation = require('../models/automation.model.js');
 const Sensor = require('../models/sensor.model.js');
+
+
 const getAllUsers = async (req, res) => {
   try {
     const { user } = req;
@@ -50,6 +52,8 @@ const updateUserById = async (req, res) => {
       new: true,
       runValidators: true,
     });
+
+    console.log("upated user data", updatedUser)
 
     if (!updatedUser) return res.status(404).json({ message: 'User not found' });
 
