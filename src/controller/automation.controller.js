@@ -7,6 +7,8 @@ const User = require('../models/user.model');
 const sendNotification = require('../service/send.notification');
 const { saveNotificationInDatabase } = require('./notification.controller');
 
+
+
 const TrigerType = {
   SENSOR: 'SENSOR',
   SCHEDULE: 'SCHEDULE',
@@ -24,6 +26,8 @@ const ActionType = {
 
 const addAutomation = async (req, res) => {
   try {
+    console.log('addAutomation req.body:', JSON.stringify(req.body)); // log
+
     const { triggers, conditions, actions, name } = req.body;
     const userId = req.user.id;
     const errors = [];
@@ -50,6 +54,8 @@ const addAutomation = async (req, res) => {
 
 const getUserAutomations = async (req, res) => {
   try {
+    console.log('getUserAutomations req.body:', JSON.stringify(req.body)); // log
+
     const userId = req.user.id;
     const automations = await Automation.find({ userId })
       .populate({ path: 'triggers.sensorId', select: 'type sensorId value' })
@@ -69,6 +75,8 @@ const getUserAutomations = async (req, res) => {
 
 const deleteAutomation = async (req, res) => {
   try {
+    console.log('deleteAutomation req.body:', JSON.stringify(req.body)); // log
+
     const { automationId } = req.params;
     const userId = req.user.id;
     const automation = await Automation.findOne({ _id: automationId, userId });
@@ -86,6 +94,8 @@ const deleteAutomation = async (req, res) => {
 
 const updateAutomation = async (req, res) => {
   try {
+    console.log('updateAutomation req.body:', JSON.stringify(req.body)); // log
+
     const { automationId } = req.params;
     const userId = req.user.id;
     const automation = await Automation.findOne({ _id: automationId, userId });
@@ -106,9 +116,24 @@ const updateAutomation = async (req, res) => {
 
 const applyAutomation = async (req, res) => {
   try {
+    console.log('applyAutomation req.body:', JSON.stringify(req.body)); // log
+
     const { automationId } = req.params;
     const userId = req.user.id;
     const automation = await fetchAutomation(automationId, userId);
+
+    // تحقق من وجود SCHEDULE وتحقق من الوقت قبل تنفيذ الشروط والأكشنز
+    const scheduleTrigger = automation.triggers.find(
+      trigger => trigger.type === 'SCHEDULE' && typeof trigger.time === 'string',
+    );
+    if (scheduleTrigger) {
+      // استخدم توقيت القاهرة في المقارنة
+      const nowInCairo = moment().tz('Africa/Cairo');
+      const scheduleTime = moment.tz(scheduleTrigger.time, 'Africa/Cairo');
+      if (nowInCairo.isBefore(scheduleTime)) {
+        return res.status(400).json({ message: 'Scheduled time not reached yet (Cairo time)' });
+      }
+    }
 
     await checkConditions(automation.conditions);
     await executeActions(automation.actions, userId);
@@ -131,6 +156,8 @@ const applyAutomation = async (req, res) => {
   }
 };
 
+// بقية الدوال زي ما هي...
+
 const fetchAutomation = async (automationId, userId) => {
   const automation = await Automation.findOne({ _id: automationId, userId });
   if (!automation) throw new Error('NOT_FOUND');
@@ -152,7 +179,6 @@ const checkConditions = async (conditions = []) => {
     }
   }
 };
-
 const executeActions = async (actions, userId) => {
   for (const action of actions) {
     if (action.type === 'NOTIFICATION') {
