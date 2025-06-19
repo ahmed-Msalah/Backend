@@ -2,6 +2,7 @@ const Device = require('../models/device.model');
 const Room = require('../models/room.model');
 const PowerUsage = require('../models/power.usage.model');
 const moment = require('moment');
+const { client } = require('../mqtt/connection');
 const createDevice = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -168,11 +169,21 @@ const toggleDevice = async (req, res) => {
       device.status = 'OFF';
       const updatedDevice = await device.save();
       console.log('Saved device:', updatedDevice);
+      client.on('message', (topic, message) => {
+        const pinNumber = device.pinNumber;
+        const payload = { status: 'OFF', pins: [pinNumber] };
+        client.publish('device/led', payload);
+      });
       return res.status(200).json({ message: 'Device Status Updated Sucessfully' });
     }
     if (device.status === 'OFF') {
       device.status = 'ON';
       const updatedDevice = await device.save();
+      client.on('message', (topic, message) => {
+        const pinNumber = device.pinNumber;
+        const payload = { status: 'ON', pins: [pinNumber] };
+        client.publish('device/led', payload);
+      });
       console.log('Saved device:', updatedDevice);
       return res.status(200).json({ message: 'Device Status Updated Sucessfully' });
     }
