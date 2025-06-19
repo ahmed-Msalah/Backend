@@ -96,8 +96,9 @@ cron.schedule('* * * * *', async () => {
     const automations = await Automation.find({}).lean();
 
     for (const automation of automations) {
-      const { triggers, conditions, actions, userId } = automation;
+      const { triggers, conditions, actions, userId, status } = automation;
 
+      if (!status) continue;
       for (const trigger of triggers) {
         if (trigger.type === 'SCHEDULE') {
           const now = new Date();
