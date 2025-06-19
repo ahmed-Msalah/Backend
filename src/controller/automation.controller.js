@@ -6,9 +6,6 @@ const User = require('../models/user.model');
 const sendNotification = require('../service/send.notification');
 const { saveNotificationInDatabase } = require('./notification.controller');
 
-// لو عندك Sensor model أضف السطر دا
-// const Sensor = require('../models/sensor.model');
-
 const TrigerType = {
   SENSOR: 'SENSOR',
   SCHEDULE: 'SCHEDULE',
@@ -116,22 +113,11 @@ const updateAutomation = async (req, res) => {
 
 const applyAutomation = async (req, res) => {
   try {
-    console.log('applyAutomation req.body:', JSON.stringify(req.body)); // log
+    console.log('applyAutomation req.body:', JSON.stringify(req.body));
 
     const { automationId } = req.params;
     const userId = req.user.id;
     const automation = await fetchAutomation(automationId, userId);
-
-    const scheduleTrigger = automation.triggers.find(
-      trigger => trigger.type === 'SCHEDULE' && typeof trigger.time === 'string',
-    );
-    if (scheduleTrigger) {
-      const nowInCairo = moment().tz('Africa/Cairo');
-      const scheduleTime = moment.tz(scheduleTrigger.time, 'Africa/Cairo');
-      if (nowInCairo.isBefore(scheduleTime)) {
-        return res.status(400).json({ message: 'Scheduled time not reached yet (Cairo time)' });
-      }
-    }
 
     await checkConditions(automation.conditions);
     await executeActions(automation.actions, userId);
