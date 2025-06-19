@@ -150,33 +150,35 @@ const getRunningDevices = async (req, res) => {
   }
 };
 
+const toggleDevice = async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const userId = req.user.id;
 
-const toggleDevice = async (req, res)=>{
-    try{
-             const {deviceId} = req.params;
-             const {status} = req.query;
-             const userId = req.user.id;
-
-             const room = await Room.findOne({userId});
-             if (!room) 
-              {
-                return res.status(404).json({message: "Device NOt Found"});
-              }
-             const device = await Device.findOne({_id: deviceId, roomId: room._id});
-
-             if (!device) 
-             {
-               return res.status(404).json({message: "Device NOt Found"});
-             }
-
-             const toggled = await Device.updateOne({_id: deviceId}, {status});
-
-             if (toggled) return res.status(201).json({message: "Device Status Updated Sucessfully"});
-
+    const room = await Room.findOne({ userId });
+    if (!room) {
+      return res.status(404).json({ message: 'Device NOt Found' });
     }
-    catch(error) {
-       res.status(500).json({message: error.message});
+    const device = await Device.findOne({ _id: deviceId, roomId: room._id });
+
+    if (!device) {
+      return res.status(404).json({ message: 'Device NOt Found' });
     }
-}
+    if (device.status === 'ON') {
+      device.status = 'OFF';
+      const updatedDevice = await device.save();
+      console.log('Saved device:', updatedDevice);
+      return res.status(200).json({ message: 'Device Status Updated Sucessfully' });
+    }
+    if (device.status === 'OFF') {
+      device.status = 'ON';
+      const updatedDevice = await device.save();
+      console.log('Saved device:', updatedDevice);
+      return res.status(200).json({ message: 'Device Status Updated Sucessfully' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
 module.exports = { createDevice, updateDevice, deleteDevice, getAllDevices, getRunningDevices, toggleDevice };
